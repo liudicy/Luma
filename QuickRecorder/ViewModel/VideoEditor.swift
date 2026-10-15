@@ -140,8 +140,8 @@ struct VideoTrimmerView: View {
                     .padding(4)
                     .background(
                         Rectangle()
-                            .foregroundStyle(.black)
-                            .cornerRadius(5)
+                            .fill(Color.clear)
+                            .qrGlassBackground(tint: .black, cornerRadius: 5)
                     )
             }.padding([.bottom, .leading, .trailing])
         }

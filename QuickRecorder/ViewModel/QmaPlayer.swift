@@ -47,8 +47,9 @@ struct qmaPlayerView: View {
                     } label: {
                         ZStack {
                             Rectangle()
-                                .cornerRadius(6)
-                                .foregroundColor(.secondary.opacity(overStop ? 0.1 : 0.00001))
+                                .fill(Color.clear)
+                                .qrGlassBackground(cornerRadius: 6)
+                                .opacity(overStop ? 0.1 : 0.00001)
                             Image(systemName: "stop.fill")
                                 .font(.system(size: 20))
                         }
@@ -68,8 +69,9 @@ struct qmaPlayerView: View {
                     } label: {
                         ZStack {
                             Rectangle()
-                                .cornerRadius(6)
-                                .foregroundColor(.secondary.opacity(overPlay ? 0.1 : 0.00001))
+                                .fill(Color.clear)
+                                .qrGlassBackground(cornerRadius: 6)
+                                .opacity(overPlay ? 0.1 : 0.00001)
                             Image(systemName: audioPlayerManager.isPlaying ? "pause.fill" : "play.fill")
                                 .font(.system(size: 30))
                         }
@@ -86,8 +88,9 @@ struct qmaPlayerView: View {
                     } label: {
                         ZStack {
                             Rectangle()
-                                .cornerRadius(6)
-                                .foregroundColor(.secondary.opacity(overSave ? 0.1 : 0.00001))
+                                .fill(Color.clear)
+                                .qrGlassBackground(cornerRadius: 6)
+                                .opacity(overSave ? 0.1 : 0.00001)
                             Image("save")
                                 .resizable()
                                 .scaledToFit()
@@ -109,8 +112,9 @@ struct qmaPlayerView: View {
                     } label: {
                         ZStack {
                             Rectangle()
-                                .cornerRadius(6)
-                                .foregroundColor(.secondary.opacity(overExport ? 0.1 : 0.00001))
+                                .fill(Color.clear)
+                                .qrGlassBackground(cornerRadius: 6)
+                                .opacity(overExport ? 0.1 : 0.00001)
                             if audioPlayerManager.exporting {
                                 ActivityIndicator()
                             } else {
@@ -205,7 +209,8 @@ struct VolumeSlider: View {
             ZStack(alignment: .leading) {
                 Group {
                     Rectangle()
-                        .foregroundColor(.secondary.opacity(0.2))
+                        .fill(Color.clear)
+                        .qrGlassBackground(cornerRadius: 12)
                     Rectangle()
                         .foregroundColor(.accentColor)
                         .frame(width: geometry.size.width * CGFloat(min(1.0, self.percentage / maxValue)))
@@ -257,7 +262,8 @@ struct PlayerSlider: View {
                 ZStack(alignment: .leading) {
                     Group {
                         Rectangle()
-                            .foregroundColor(.secondary.opacity(0.5))
+                            .fill(Color.clear)
+                            .qrGlassBackground(cornerRadius: 12)
                         Rectangle()
                             .foregroundColor(.secondary)
                             .frame(width: geometry.size.width * CGFloat(min(1.0, self.isDragging ? self.temporaryPercentage : self.percentage)))
