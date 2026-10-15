@@ -35,7 +35,7 @@ struct StatusBarItem: View {
                         .cornerRadius(4)
                     HStack(spacing: 4) {
                         if miniStatusBar {
-                            if isHovering {
+                            if isMacOS27 || isHovering {
                                 Button(action: {
                                     if SCContext.streamType == .idevice {
                                         AVOutputClass.shared.stopRecording()
@@ -213,11 +213,12 @@ struct StatusBarItem: View {
                 }
             }
         }
-        .onTapGesture {}
         .onHover { hovering in
             isHovering = hovering
-            hideMousePointer = hovering
-            hideScreenMagnifier = hovering
+            if !isMacOS27 {
+                hideMousePointer = hovering
+                hideScreenMagnifier = hovering
+            }
         }
     }
 }
