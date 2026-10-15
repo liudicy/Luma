@@ -355,6 +355,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         closeAllWindow()
         if showOnDock { _ = applicationShouldHandleReopen(NSApp, hasVisibleWindows: true) }
+        showForkMigrationNoticeIfNeeded()
         tips("Would you like to use H.265 format for better video quality and smaller file size?",
              id: "qr.switch-to-h265.note", buttonTitle: "Use H.265", switchButton: true) {
             ud.setValue(Encoder.h265.rawValue, forKey: "encoder")
@@ -470,7 +471,7 @@ func getStatusBarWidth() -> CGFloat {
     let useMiniWidth = miniStatusBar && !isMacOS27
     var width = 158.0
     switch SCContext.streamType {
-    case nil: width = useMiniWidth ? 36.0 : 36.0
+    case nil: width = 36.0
     case .idevice: width = useMiniWidth ? 68.0 : 138.0
     case .systemaudio: width = useMiniWidth ? 68.0 : 114.0
     default: width = useMiniWidth ? 78.0 : 158.0
@@ -505,6 +506,36 @@ func process(path: String, arguments: [String]) -> String? {
     }
     
     return output.trimmingCharacters(in: .newlines)
+}
+
+// Spec §4.1.4: this fork changed the bundle ID to com.liudicy.QuickRecorder, so macOS treats it
+// as a different app — screen-recording permission must be granted again and the legacy app's
+// preferences are not carried over. When a legacy (com.lihaoyun6) install is detected, notify the
+// user once on first launch. Presented via DispatchQueue.main.async so it never blocks launch,
+// mirroring how the existing tips()/createAlert alerts are shown.
+func showForkMigrationNoticeIfNeeded() {
+    let shouldNotice = !ud.bool(forKey: "forkMigrationNoticeShown")
+    DispatchQueue.main.async {
+        guard shouldNotice else { return }
+        // Mark the flag first: the notice shows at most once, and a fresh install (no legacy
+        // preferences found) sets the flag silently and is never nagged again.
+        ud.set(true, forKey: "forkMigrationNoticeShown")
+        // The app is NOT sandboxed (QuickRecorder.entitlements has no
+        // com.apple.security.app-sandbox), so the legacy install's preferences live directly
+        // in ~/Library/Preferences — no old container path to check.
+        let legacyPrefs = NSHomeDirectory() + "/Library/Preferences/com.lihaoyun6.QuickRecorder.plist"
+        guard fd.fileExists(atPath: legacyPrefs) else { return }
+        let response = createAlert(
+            title: "Fork Migration Notice",
+            message: "This build of QuickRecorder is a community fork with a new bundle ID, so macOS treats it as a separate app. Screen Recording permission must be granted again in System Settings (Privacy & Security > Screen Recording), and settings or shortcuts from the original QuickRecorder were not carried over.",
+            button1: "Open Screen Recording Settings",
+            button2: "OK"
+        ).runModal()
+        if response == .alertFirstButtonReturn,
+           let settingsURL = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+            NSWorkspace.shared.open(settingsURL)
+        }
+    }
 }
 
 func tips(_ message: String, title: String? = nil, id: String, buttonTitle: String = "OK", switchButton: Bool = false, width: Int? = nil, action: (() -> Void)? = nil) {

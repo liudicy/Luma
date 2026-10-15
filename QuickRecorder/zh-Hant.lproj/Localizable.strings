@@ -225,3 +225,14 @@
 "audio file writing issue" = "音频文件写入出错";
 "closing stream with error:\n" = "关闭流时发生错误:\n";
 "\nthis might be due to the window closing or the user stopping from the sonoma ui" = "\n这可能是有由于用户关闭了正在录制中的窗口, 或使用窗口上的附加按钮停止了录制.";
+
+// Fork: About section (spec §4.1.5)
+"About" = "關於";
+"QuickRecorder Fork" = "QuickRecorder 分支版本";
+"Based on" = "基於";
+"This fork" = "本分支";
+
+// Fork: first-launch migration notice (spec §4.1.4)
+"Fork Migration Notice" = "分支移轉提示";
+"This build of QuickRecorder is a community fork with a new bundle ID, so macOS treats it as a separate app. Screen Recording permission must be granted again in System Settings (Privacy & Security > Screen Recording), and settings or shortcuts from the original QuickRecorder were not carried over." = "本版本 QuickRecorder 是更換了 Bundle ID 的社群分支, macOS 會將其視為另一個獨立的應用. 需要前往「系統設定 > 隱私與安全性 > 螢幕錄製」重新授予螢幕錄製權限, 原版 QuickRecorder 的設定與快捷鍵也不會被繼承.";
+"Open Screen Recording Settings" = "開啟螢幕錄製設定";

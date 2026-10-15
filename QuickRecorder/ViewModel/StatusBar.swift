@@ -254,12 +254,27 @@ struct StatusBarItem: View {
                 }
             }
         }
+        .qrLegacyStatusBarTapSuppression()
         .onHover { hovering in
             isHovering = hovering
             if !isMacOS27 {
                 hideMousePointer = hovering
                 hideScreenMagnifier = hovering
             }
+        }
+    }
+}
+
+// Spec §4.2.4: upstream 1.6.9 attached an empty `.onTapGesture {}` to the outer HStack of the
+// status bar item. It is removed only on macOS 27+ (where it swallowed child button clicks);
+// macOS 26 and earlier must render exactly like upstream, so the gesture stays there.
+private extension View {
+    @ViewBuilder
+    func qrLegacyStatusBarTapSuppression() -> some View {
+        if isMacOS27 {
+            self
+        } else {
+            self.onTapGesture {}
         }
     }
 }

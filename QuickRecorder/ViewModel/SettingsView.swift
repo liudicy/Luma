@@ -27,14 +27,18 @@ struct SettingsView: View {
                 .listStyle(.sidebar)
                 .padding(.top, 9)
             } detail: {
-                switch selectedItem {
-                case "General": GeneralView()
-                case "Recorder": RecorderView()
-                case "Output": OutputView()
-                case "Hotkey": HotkeyView()
-                case "Blocklist": BlocklistView()
-                default: GeneralView()
+                // Spec §4.3.6: soften the scroll-edge effect on the detail content (macOS 26+).
+                Group {
+                    switch selectedItem {
+                    case "General": GeneralView()
+                    case "Recorder": RecorderView()
+                    case "Output": OutputView()
+                    case "Hotkey": HotkeyView()
+                    case "Blocklist": BlocklistView()
+                    default: GeneralView()
+                    }
                 }
+                .scrollEdgeEffectStyle(.soft)
             }
             .frame(width: 600, height: 512)
         } else {
