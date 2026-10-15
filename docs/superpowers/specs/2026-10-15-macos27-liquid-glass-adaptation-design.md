@@ -154,16 +154,29 @@ let isMacOS27 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 2
 
 **EdDSA 密钥生成与保管**：使用 Sparkle 附带的 `generate_keys` 工具（位于 Sparkle 框架的 `bin/` 目录）生成密钥对。私钥自动存入 macOS Keychain（Sparkle 默认行为），公钥输出到终端，手动写入 `Info.plist` 的 `SUPublicEDKey`。私钥不可泄露，否则更新机制可被中间人攻击。
 
-#### 4.1.4 Bundle ID 决策
+#### 4.1.4 Bundle ID 修改
 
-当前 `PRODUCT_BUNDLE_IDENTIFIER = com.lihaoyun6.QuickRecorder`。Fork 分发面临选择：
+**决策**：修改 Bundle ID，fork 完全独立于原版。
 
-| 方案 | 优点 | 缺点 |
-|------|------|------|
-| **保持原 Bundle ID** | 用户无需重新授权屏幕录制；偏好设置保留 | 与原版共存时 LaunchServices 混淆；两个 App 的 UserDefaults 共享同一域，设置互相干扰 |
-| **修改 Bundle ID**（如 `com.<你的用户名>.QuickRecorder`） | 完全独立于原版；无冲突 | 用户需重新授权屏幕录制权限；所有偏好设置重置 |
+- `PRODUCT_BUNDLE_IDENTIFIER` 改为 fork 维护者的 Bundle ID（如 `com.<你的用户名>.QuickRecorder`）。
+- `Info.plist` 中 `UTExportedTypeDeclarations` 的 identifier 同步更新。
+- `SCContext.swift` 中 `excludedApps` 列表对自身的排除引用同步更新。
+- `NSImage.createScreenShot()` 中的 `excludedAppBundleIDs` 同步更新。
+- 用户需重新授权屏幕录制权限，所有偏好设置重置（首次启动时通过提示告知用户）。
 
-**待用户决策**：是否修改 Bundle ID？如修改，需同步更新 `PRODUCT_BUNDLE_IDENTIFIER`、`Info.plist` 中的 `UTExportedTypeDeclarations` identifier、以及 `SCContext.swift` 中 `excludedApps` 列表对自身的排除引用。
+#### 4.1.5 关于页面与归属声明
+
+- 设置窗口添加"关于"区块（或在 General 页底部添加）：注明本项目基于 [lihaoyun6/QuickRecorder](https://github.com/lihaoyun6/QuickRecorder) 修改，提供 fork 仓库的 GitHub 地址。
+- README.md 和 README_zh.md 更新：添加 fork 说明、修改记录、新仓库地址。
+
+#### 4.1.6 App 图标重设计
+
+基于当前图标的视觉特征（紫色圆形 + 白色圆点/录制指示器），按 Liquid Glass 设计标准重新设计：
+
+- 遵循 macOS 27 图标规范：圆角矩形底板、玻璃质感、多层光影。
+- 保留紫色主色调（mypurple: P3 #5756CF light / #6261EA dark）作为品牌色。
+- 玻璃层效果：半透明玻璃覆盖 + 底部高光反射。
+- 输出所有必需尺寸（16/32/64/128/256/512/1024px @1x/@2x）。
 
 ### 4.2 Phase 2：菜单栏 Bug 修复
 
