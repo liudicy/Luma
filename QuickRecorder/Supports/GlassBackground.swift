@@ -9,7 +9,7 @@ import SwiftUI
 
 extension View {
     @ViewBuilder
-    func qrGlassBackground(tint: Color? = nil, cornerRadius: CGFloat = 8, interactive: Bool = false) -> some View {
+    func qrGlassBackground(tint: Color? = nil, cornerRadius: CGFloat = 8, interactive: Bool = false, fallbackMaterial: Material = .ultraThinMaterial) -> some View {
         if #available(macOS 26, *) {
             // NOTE: verified .interactive() IS available on the macOS 26+ SDK (target arm64-apple-macos26.0).
             if let tint = tint {
@@ -29,7 +29,7 @@ extension View {
             if let tint = tint {
                 self.background(tint.opacity(0.8)).cornerRadius(cornerRadius)
             } else {
-                self.background(.ultraThinMaterial).cornerRadius(cornerRadius)
+                self.background(fallbackMaterial).cornerRadius(cornerRadius)
             }
         }
     }
