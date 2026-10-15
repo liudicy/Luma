@@ -139,10 +139,17 @@ struct StatusBarItem: View {
                     recordingLength = SCContext.getRecordingLength()
                     let timePassed = Date.now.timeIntervalSince(SCContext.startTime ?? t)
                     if SCContext.autoStop != 0 && timePassed / 60 >= CGFloat(SCContext.autoStop) { SCContext.stopRecording() }
-                    if let visible = statusBarItem.button?.window?.occlusionState.contains(.visible) {
-                        if visible { NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.close(); return }
-                        if SCContext.streamType != nil  && !visible && !(NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.isVisible ?? false) {
-                            guard let screen = SCContext.getScreenWithMouse() else { return }
+
+                    if isMacOS27 {
+                        // macOS 27: occlusionState unreliable, use visibleFrame to detect menu bar auto-hide
+                        let mainPanelVisible = NSApp.windows.contains(where: { $0.title == "QuickRecorder".local && $0.isVisible })
+                        if mainPanelVisible {
+                            NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.close()
+                            return
+                        }
+                        guard let screen = SCContext.getScreenWithMouse() else { return }
+                        let menuBarVisible = screen.visibleFrame.maxY < screen.frame.maxY
+                        if SCContext.streamType != nil && !menuBarVisible && !(NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.isVisible ?? false) {
                             let width = getStatusBarWidth()
                             let wX = (screen.frame.width - width) / 2
                             let contentView = NSHostingView(rootView: StatusBarItem())
@@ -150,6 +157,21 @@ struct StatusBarItem: View {
                             controlPanel.setFrame(contentView.frame, display: true)
                             controlPanel.contentView = contentView
                             controlPanel.makeKeyAndOrderFront(nil)
+                        }
+                    } else {
+                        // macOS 26-: original occlusionState logic
+                        if let visible = statusBarItem.button?.window?.occlusionState.contains(.visible) {
+                            if visible { NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.close(); return }
+                            if SCContext.streamType != nil && !visible && !(NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.isVisible ?? false) {
+                                guard let screen = SCContext.getScreenWithMouse() else { return }
+                                let width = getStatusBarWidth()
+                                let wX = (screen.frame.width - width) / 2
+                                let contentView = NSHostingView(rootView: StatusBarItem())
+                                contentView.frame = NSRect(x: wX, y: screen.visibleFrame.maxY, width: width, height: 24)
+                                controlPanel.setFrame(contentView.frame, display: true)
+                                controlPanel.contentView = contentView
+                                controlPanel.makeKeyAndOrderFront(nil)
+                            }
                         }
                     }
                 }
