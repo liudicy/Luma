@@ -19,6 +19,8 @@ import Sparkle
 let isMacOS12 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 12
 let isMacOS14 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 14
 let isMacOS15 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 15
+let isMacOS26 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 26
+let isMacOS27 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27
 var scPerm = false
 let fd = FileManager.default
 let ud = UserDefaults.standard
