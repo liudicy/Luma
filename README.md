@@ -2,8 +2,10 @@
 <p align="center">
 <img src="./QuickRecorder/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="200" height="200" />
 <h1 align="center">QuickRecorder</h1>
-<h3 align="center">A lightweight and high-performance screen recorder for macOS<br><a href="./README_zh.md">[中文版本]</a><br><a href="https://lihaoyun6.github.io/quickrecorder/">[Landing Page]</a>
+<h3 align="center">A lightweight and high-performance screen recorder for macOS<br><a href="./README_zh.md">[中文版本]</a><br><a href="https://lihaoyun6.github.io/quickrecorder/">[Upstream Landing Page]</a>
 </p>
+
+> **Note:** This project is a fork modified based on the original open-source project [lihaoyun6/QuickRecorder](https://github.com/lihaoyun6/QuickRecorder) (author no longer maintaining it), maintained at [github.com/liudicy/QuickRecorder](https://github.com/liudicy/QuickRecorder). This fork is adapted for **macOS 27** with Apple's **Liquid Glass** design and includes bug fixes. Upstream credit goes to [lihaoyun6](https://github.com/lihaoyun6) and all contributors of the original project.
 
 ## Screenshot
 <p align="center">
@@ -19,11 +21,9 @@
 - macOS 12.3 and Later
 
 ### Install:
-Download the latest installation file [here](../../releases/latest) or install via Homebrew:
+Download the latest installation file of this fork [here](../../releases/latest).
 
-```bash
-brew install lihaoyun6/tap/quickrecorder
-```
+> This fork has no Homebrew tap. The upstream command `brew install lihaoyun6/tap/quickrecorder` installs the **original** QuickRecorder by [lihaoyun6](https://github.com/lihaoyun6/QuickRecorder), not this fork, so please use the Releases page above to get the macOS 27 / Liquid Glass build.
 
 ### Features/Usage:
 - You can use QuickRecorder to record your screens / windows / applications / mobile devices... etc.

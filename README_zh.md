@@ -2,8 +2,10 @@
 <p align="center">
 <img src="./QuickRecorder/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="200" height="200" />
 <h1 align="center">QuickRecorder</h1>
-<h3 align="center">多功能、轻量化、高性能的 macOS 屏幕录制工具<br><a href="./README.md">[English Version]</a><br><a href="https://lihaoyun6.github.io/quickrecorder/">[软件主页]</a>
+<h3 align="center">多功能、轻量化、高性能的 macOS 屏幕录制工具<br><a href="./README.md">[English Version]</a><br><a href="https://lihaoyun6.github.io/quickrecorder/">[原版软件主页]</a>
 </p>
+
+> **说明：** 本项目是基于开源项目 [lihaoyun6/QuickRecorder](https://github.com/lihaoyun6/QuickRecorder)（原作者已停止维护）修改的分支（Fork），现由 [github.com/liudicy/QuickRecorder](https://github.com/liudicy/QuickRecorder) 维护。本分支针对 **macOS 27** 与苹果 **液态玻璃（Liquid Glass）** 设计进行了适配，并修复了若干问题。感谢 [lihaoyun6](https://github.com/lihaoyun6) 及原版项目的各位贡献者。
 
 ## 运行截图
 <p align="center">
@@ -19,11 +21,9 @@
 - macOS 12.3 及更高版本  
 
 ### 安装:
-可[点此前往](../../releases/latest)下载最新版安装文件. 或使用homebrew安装:  
+可[点此前往](../../releases/latest)下载本仓库最新版安装文件.  
 
-```bash
-brew install lihaoyun6/tap/quickrecorder
-```
+> 本仓库未提供 Homebrew 安装源. 原版安装命令 `brew install lihaoyun6/tap/quickrecorder` 安装的是 [lihaoyun6](https://github.com/lihaoyun6/QuickRecorder) 维护的**原版** QuickRecorder, 并非本分支版本, 请通过上方的 Releases 页面下载适配 macOS 27 / 液态玻璃的版本.
 
 ### 特色 / 使用:
 - 使用 SwiftUI 编写, 体积小巧轻量化. 软件大小仅有不到 10MB, 无任何累赘功能. 
