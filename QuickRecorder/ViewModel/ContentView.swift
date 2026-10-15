@@ -32,7 +32,7 @@ struct ContentView: View {
                 ZStack {
                     if !fromStatusBar {
                         Color.clear
-                            .background(.ultraThinMaterial)
+                            .qrGlassBackground(cornerRadius: 14)
                             .environment(\.controlActiveState, .active)
                     }
                     ZStack {
@@ -290,7 +290,7 @@ struct SelectorView: View {
         .onHover{ hovering in
             backgroundOpacity = hovering ? 0.2 : 0.0001
         }
-        .background( .primary.opacity(backgroundOpacity) )
+        .qrGlassBackground(tint: .primary.opacity(backgroundOpacity), cornerRadius: 8, interactive: true)
     }
 }
 
@@ -301,7 +301,9 @@ struct CountdownView: View {
 
     var body: some View {
         ZStack {
-            Color.mypurple.environment(\.colorScheme, .dark)
+            Color.clear
+                .qrGlassBackground(tint: .mypurple, cornerRadius: 10, interactive: true)
+                .environment(\.colorScheme, .dark)
             Text("\(countdownValue)")
                 .font(.system(size: 72))
                 .foregroundColor(.white)
