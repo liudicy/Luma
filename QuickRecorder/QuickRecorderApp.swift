@@ -15,6 +15,7 @@ import KeyboardShortcuts
 import ServiceManagement
 import CoreMediaIO
 import Sparkle
+import ObjectiveC.runtime
 
 let isMacOS12 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 12
 let isMacOS14 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 14
@@ -266,6 +267,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
         statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusBarItem.button?.image = NSImage()
 
+        if isMacOS26 || isMacOS27 {
+            enableGlassContainerClickThrough()
+        }
+
         mousePointer.title = "Mouse Pointer".local
         mousePointer.level = .screenSaver
         mousePointer.ignoresMouseEvents = true
@@ -398,6 +403,31 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
         }
     }
     
+    // TODO: Remove when Apple fixes NSGlassContainerView hitTest click-through (macOS 26+ regression)
+    func enableGlassContainerClickThrough() {
+        guard let cls = NSClassFromString("NSGlassContainerView") else { return }
+        let sel = #selector(NSView.hitTest(_:))
+        guard let method = class_getInstanceMethod(cls, sel) else { return }
+        let originalImp = method_getImplementation(method)
+
+        let block: @convention(block) (NSView, NSPoint) -> NSView? = { view, point in
+            typealias Original = @convention(c) (AnyObject, Selector, NSPoint) -> NSView?
+            let result = unsafeBitCast(originalImp, to: Original.self)(view, sel, point)
+            return result === view ? nil : result
+        }
+        let newImp = imp_implementationWithBlock(block)
+
+        // class_addMethod installs a class-local override only when the class does not
+        // already declare hitTest: itself. If it fails, the class owns the method and
+        // replacing that IMP is safe; replacing an inherited one would hit-test-break
+        // every NSView in the app.
+        if !class_addMethod(cls, sel, newImp, method_getTypeEncoding(method)) {
+            if let own = class_getInstanceMethod(cls, sel) {
+                method_setImplementation(own, newImp)
+            }
+        }
+    }
+
     class EscPanel: NSPanel {
         override func cancelOperation(_ sender: Any?) {
             self.close()
