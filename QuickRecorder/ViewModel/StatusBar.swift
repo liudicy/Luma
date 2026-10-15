@@ -29,9 +29,16 @@ struct StatusBarItem: View {
         HStack(spacing: 0) {
             if SCContext.streamType != nil {
                 ZStack {
-                    Rectangle()
-                        .fill(Color.clear)
-                        .qrGlassBackground(tint: .mypurple, cornerRadius: 4, interactive: true)
+                    if #available(macOS 26, *) {
+                        Rectangle()
+                            .fill(Color.clear)
+                            .qrGlassBackground(tint: .mypurple, cornerRadius: 4, interactive: true)
+                    } else {
+                        Rectangle()
+                            .fill(Color.mypurple)
+                            .shadow(color: .black.opacity(0.3), radius: 4)
+                            .cornerRadius(4)
+                    }
                     HStack(spacing: 4) {
                         if miniStatusBar {
                             // macOS 27 renders the elapsed time followed by the always-visible buttons
@@ -182,9 +189,16 @@ struct StatusBarItem: View {
                                 popoverState.isShowing = true
                             }, label: {
                                 ZStack {
-                                    Rectangle()
-                                        .fill(Color.clear)
-                                        .qrGlassBackground(tint: SCContext.isCameraRunning() ? .mygreen : .gray, cornerRadius: 4, interactive: true)
+                                    if #available(macOS 26, *) {
+                                        Rectangle()
+                                            .fill(Color.clear)
+                                            .qrGlassBackground(tint: SCContext.isCameraRunning() ? .mygreen : .gray, cornerRadius: 4, interactive: true)
+                                    } else {
+                                        Rectangle()
+                                            .fill(SCContext.isCameraRunning() ? Color.mygreen : .gray)
+                                            .shadow(color: .black.opacity(0.3), radius: 4)
+                                            .cornerRadius(4)
+                                    }
                                     Image("camera")
                                         .foregroundStyle(.white)
                                 }.frame(width: 36).padding([.leading,.trailing], 4)
@@ -196,9 +210,16 @@ struct StatusBarItem: View {
                                 }
                             }, label: {
                                 ZStack {
-                                    Rectangle()
-                                        .fill(Color.clear)
-                                        .qrGlassBackground(tint: deviceWindow.isVisible ? .myblue : .gray.opacity(0.7), cornerRadius: 4, interactive: true)
+                                    if #available(macOS 26, *) {
+                                        Rectangle()
+                                            .fill(Color.clear)
+                                            .qrGlassBackground(tint: deviceWindow.isVisible ? .myblue : .gray.opacity(0.7), cornerRadius: 4, interactive: true)
+                                    } else {
+                                        Rectangle()
+                                            .fill(deviceWindow.isVisible ? Color.myblue : .gray.opacity(0.7))
+                                            .shadow(color: .black.opacity(0.3), radius: 4)
+                                            .cornerRadius(4)
+                                    }
                                     Image(systemName: "apps.ipad")
                                         .font(.system(size: 16))
                                         .foregroundStyle(.white)
