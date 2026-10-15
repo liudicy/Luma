@@ -38,7 +38,7 @@ struct SettingsView: View {
                     default: GeneralView()
                     }
                 }
-                .scrollEdgeEffectStyle(.soft)
+                .scrollEdgeEffectStyle(.soft, for: .vertical)
             }
             .frame(width: 600, height: 512)
         } else {
