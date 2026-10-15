@@ -15,27 +15,51 @@ struct SettingsView: View {
     @State private var selectedItem: String? = "General"
     
     var body: some View {
-        NavigationView {
-            List(selection: $selectedItem) {
-                NavigationLink(destination: GeneralView(), tag: "General", selection: $selectedItem) {
-                    Label("General", image: "gear")
+        if #available(macOS 26, *) {
+            NavigationSplitView {
+                List(selection: $selectedItem) {
+                    Label("General", image: "gear").tag("General")
+                    Label("Recorder", image: "record").tag("Recorder")
+                    Label("Output", image: "film").tag("Output")
+                    Label("Hotkey", image: "hotkey").tag("Hotkey")
+                    Label("Blocklist", image: "blacklist").tag("Blocklist")
                 }
-                NavigationLink(destination: RecorderView(), tag: "Recorder", selection: $selectedItem) {
-                    Label("Recorder", image: "record")
-                }
-                NavigationLink(destination: OutputView(), tag: "Output", selection: $selectedItem) {
-                    Label("Output", image: "film")
-                }
-                NavigationLink(destination: HotkeyView(), tag: "Hotkey", selection: $selectedItem) {
-                    Label("Hotkey", image: "hotkey")
-                }
-                NavigationLink(destination: BlocklistView(), tag: "Blaoklist", selection: $selectedItem) {
-                    Label("Blocklist", image: "blacklist")
+                .listStyle(.sidebar)
+                .padding(.top, 9)
+            } detail: {
+                switch selectedItem {
+                case "General": GeneralView()
+                case "Recorder": RecorderView()
+                case "Output": OutputView()
+                case "Hotkey": HotkeyView()
+                case "Blocklist": BlocklistView()
+                default: GeneralView()
                 }
             }
-            .listStyle(.sidebar)
-            .padding(.top, 9)
-        }.frame(width: 600, height: 512)
+            .frame(width: 600, height: 512)
+        } else {
+            NavigationView {
+                List(selection: $selectedItem) {
+                    NavigationLink(destination: GeneralView(), tag: "General", selection: $selectedItem) {
+                        Label("General", image: "gear")
+                    }
+                    NavigationLink(destination: RecorderView(), tag: "Recorder", selection: $selectedItem) {
+                        Label("Recorder", image: "record")
+                    }
+                    NavigationLink(destination: OutputView(), tag: "Output", selection: $selectedItem) {
+                        Label("Output", image: "film")
+                    }
+                    NavigationLink(destination: HotkeyView(), tag: "Hotkey", selection: $selectedItem) {
+                        Label("Hotkey", image: "hotkey")
+                    }
+                    NavigationLink(destination: BlocklistView(), tag: "Blaoklist", selection: $selectedItem) {
+                        Label("Blocklist", image: "blacklist")
+                    }
+                }
+                .listStyle(.sidebar)
+                .padding(.top, 9)
+            }.frame(width: 600, height: 512)
+        }
     }
 }
 
