@@ -253,8 +253,10 @@ func updateStatusBar() {
         }
         guard let button = statusBarItem.button else { return }
         //let width = SCContext.streamType == nil ? 36 : ((SCContext.streamType == .idevice || SCContext.streamType == .systemaudio) ? 138 : 158)
-        let iconView = NSHostingView(rootView: StatusBarItem().padding(.top, isMacOS14 ? -2 : -1))
-        iconView.frame = NSRect(x: 0, y: 1, width: getStatusBarWidth(), height: isMacOS14 ? 22 : 21)
+        let topPadding: CGFloat = isMacOS27 ? -2 : (isMacOS14 ? -2 : -1)
+        let barHeight: CGFloat = isMacOS27 ? 22 : (isMacOS14 ? 22 : 21)
+        let iconView = NSHostingView(rootView: StatusBarItem().padding(.top, topPadding))
+        iconView.frame = NSRect(x: 0, y: 1, width: getStatusBarWidth(), height: barHeight)
         button.subviews = [iconView]
         button.frame = iconView.frame
         button.setAccessibilityLabel("QuickRecorder")
