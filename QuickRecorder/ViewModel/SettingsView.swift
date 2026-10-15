@@ -104,6 +104,44 @@ struct GeneralView: View {
                         .foregroundColor(.secondary)
                 }
             }
+            SGroupBox(label: "About") {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("QuickRecorder Fork")
+                        .font(.headline)
+                    HStack(spacing: 4) {
+                        Text("Based on")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Button(action: {
+                            NSWorkspace.shared.open(URL(string: "https://github.com/lihaoyun6/QuickRecorder")!)
+                        }) {
+                            Text("lihaoyun6/QuickRecorder")
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    HStack(spacing: 4) {
+                        Text("This fork")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Button(action: {
+                            NSWorkspace.shared.open(URL(string: "https://github.com/liudicy/QuickRecorder")!)
+                        }) {
+                            Text("liudicy/QuickRecorder")
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    if !forkVersionString.isEmpty {
+                        Text(forkVersionString)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
         }
         .onAppear{ if #available(macOS 13, *) { launchAtLogin = (SMAppService.mainApp.status == .enabled) }}
         .onChange(of: showMenubar) { _ in updateStatusBar() }
@@ -115,6 +153,15 @@ struct GeneralView: View {
                 NSApp.setActivationPolicy(.regular)
             }
         }
+    }
+    
+    private var forkVersionString: String {
+        let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
+        if short.isEmpty {
+            return build.isEmpty ? "" : "Build \(build)"
+        }
+        return build.isEmpty ? "Version \(short)" : "Version \(short) (\(build))"
     }
 }
 
