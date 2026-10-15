@@ -69,6 +69,8 @@ let isMacOS15 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 1
 
 缺失 macOS 26/27 检测。代码中大量 `isMacOS12 ? A : B` 和 `isMacOS14 ? A : B` 硬编码分支。
 
+**版本常量风格说明**：`isMacOS12/14/15` 用 `==` 是因为旧版本分支逻辑互斥（每个版本有独立的 padding/尺寸常量）。新增的 `isMacOS27` 将使用 `>=` 以自动覆盖未来版本，这是有意为之——macOS 28+ 应自动继承 macOS 27 的适配逻辑，无需每次手动添加新常量。
+
 ### 2.4 现有毛玻璃实现
 
 | 位置 | 当前方案 |
@@ -107,6 +109,8 @@ Liquid Glass 引入的 `NSGlassContainerView` 的 `hitTest:` 返回自身而非�
 | `.glassEffect(_:in:)` | SwiftUI, macOS 26+ | 给任意视图附加玻璃材质，支持 cornerRadius/tint/intensity |
 | `GlassEffectContainer` | SwiftUI, macOS 26+ | 多玻璃元素合并容器 |
 | `.glassEffect(.regular.tint(_:).interactive())` | SwiftUI, macOS 26+ | 带色调 + 交互弹动的玻璃 |
+
+> **实施注意**：`.interactive()` 的部分文档来源标注其为 iOS-only。macOS 27 WWDC session 提到"点击时 Glass 轻微弹动"，但 API 签名可能与 iOS 不同。实施时先验证 `.interactive()` 在 macOS 26+ SDK 中的可用性；如不可用，macOS 上省略 `.interactive()`（仅 tint + cornerRadius），或查找 macOS 对应的交互修饰符。
 | `NSControlEvents` | AppKit, macOS 27+ | 标准控件事件响应（替代 mouseDown 追踪） |
 | `NSViewCornerConfiguration` | AppKit, macOS 27+ | 自适应圆角配置 |
 | `NSTextSelectionManager` | AppKit, macOS 27+ | 文本选择手势 |
@@ -148,6 +152,19 @@ let isMacOS27 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 2
 - `SUPublicEDKey` 用 fork 维护者的 EdDSA 公钥重新生成。
 - `appcast.xml` 中的下载 URL 和版本号同步更新。
 
+**EdDSA 密钥生成与保管**：使用 Sparkle 附带的 `generate_keys` 工具（位于 Sparkle 框架的 `bin/` 目录）生成密钥对。私钥自动存入 macOS Keychain（Sparkle 默认行为），公钥输出到终端，手动写入 `Info.plist` 的 `SUPublicEDKey`。私钥不可泄露，否则更新机制可被中间人攻击。
+
+#### 4.1.4 Bundle ID 决策
+
+当前 `PRODUCT_BUNDLE_IDENTIFIER = com.lihaoyun6.QuickRecorder`。Fork 分发面临选择：
+
+| 方案 | 优点 | 缺点 |
+|------|------|------|
+| **保持原 Bundle ID** | 用户无需重新授权屏幕录制；偏好设置保留 | 与原版共存时 LaunchServices 混淆；两个 App 的 UserDefaults 共享同一域，设置互相干扰 |
+| **修改 Bundle ID**（如 `com.<你的用户名>.QuickRecorder`） | 完全独立于原版；无冲突 | 用户需重新授权屏幕录制权限；所有偏好设置重置 |
+
+**待用户决策**：是否修改 Bundle ID？如修改，需同步更新 `PRODUCT_BUNDLE_IDENTIFIER`、`Info.plist` 中的 `UTExportedTypeDeclarations` identifier、以及 `SCContext.swift` 中 `excludedApps` 列表对自身的排除引用。
+
 ### 4.2 Phase 2：菜单栏 Bug 修复
 
 #### 4.2.1 修复 onHover 失效（FB23329983）
@@ -170,7 +187,7 @@ if miniStatusBar {
 }
 ```
 
-`hideMousePointer` / `hideScreenMagnifier` 在 macOS 27 上改为基于录制状态控制（录制中时始终隐藏，而非依赖 hover）。
+`hideMousePointer` / `hideScreenMagnifier` 在 macOS 27 上**不再基于 hover 隐藏**。原逻辑是"hover 菜单栏时隐藏"以避免它们出现在录制画面中；由于 macOS 27 hover 不可用，直接移除 hover 关联，接受鼠标高亮/放大镜可能短暂出现在录制画面中。这是系统限制下的合理取舍。
 
 #### 4.2.2 修复 occlusionState 失效（FB23349447）
 
@@ -178,12 +195,13 @@ if miniStatusBar {
 
 **问题**：`statusBarItem.button?.window?.occlusionState.contains(.visible)` 在 macOS 27 上不反映真实菜单栏可见性，浮动 "Recording Controller" 面板的显示/隐藏逻辑崩溃。
 
-**方案**：macOS 27 上不再依赖 occlusionState。改为：
+**方案**：macOS 27 上不再依赖 occlusionState。改为通过 `NSScreen` 的 `visibleFrame` 与 `frame` 高度差判断菜单栏是否被自动隐藏：
 
 ```swift
 if isMacOS27 {
-    // 录制中且主面板未打开时，始终显示浮动控制面板
-    if SCContext.streamType != nil && !mainPanelIsVisible {
+    // 仅在菜单栏被系统自动隐藏时才显示浮动控制面板
+    // visibleFrame.maxY < frame.maxY 说明菜单栏占位（可见）；否则被自动隐藏
+    if SCContext.streamType != nil && !mainPanelIsVisible && !menuBarIsVisible {
         showControlPanel()
     }
 } else {
@@ -191,7 +209,7 @@ if isMacOS27 {
 }
 ```
 
-`mainPanelIsVisible` 通过检查 `NSApp.windows` 中是否存在标题为 "QuickRecorder" 的可见窗口来判断。
+`mainPanelIsVisible` 通过检查 `NSApp.windows` 中是否存在标题为 "QuickRecorder" 的可见窗口来判断。`menuBarIsVisible` 通过 `NSScreen.main.visibleFrame.maxY < NSScreen.main.frame.maxY` 判断。
 
 #### 4.2.3 修复 NSGlassContainerView 点击拦截
 
@@ -363,7 +381,14 @@ if #available(macOS 26, *) {
         List(selection: $selectedItem) { ... }
             .listStyle(.sidebar)
     } detail: {
-        // detail content
+        switch selectedItem {
+        case "General": GeneralView()
+        case "Recorder": RecorderView()
+        case "Output": OutputView()
+        case "Hotkey": HotkeyView()
+        case "Blocklist": BlocklistView()
+        default: GeneralView()
+        }
     }
 } else {
     NavigationView { ... }
@@ -372,7 +397,7 @@ if #available(macOS 26, *) {
 
 窗口配置（QuickRecorderApp.swift:69-86 Settings scene）：
 - macOS 27 上侧边栏自动获得 attached 样式 + icon tinting（系统行为，无需代码）。
-- 添加 `scrollEdgeEffectStyle(.soft)`（macOS 26+）。
+- Settings scene 的 detail ScrollView / Form 上添加 `.scrollEdgeEffectStyle(.soft)`（macOS 26+），使侧边栏滚动边缘获得柔和过渡。
 
 #### 4.3.7 浮动窗口 Glass 化
 
@@ -452,7 +477,7 @@ macOS 27 设置 > 外观中的玻璃透明度滑块，使用系统 `.glassEffect
 |--------|----------|----------|----------|----------|----------|----------|
 | 编译通过 | 必须 | 必须 | 必须 | 必须 | 必须 | 必须 |
 | 录制/暂停/停止 | 必须 | 必须 | 回归 | 回归 | 回归 | 回归 |
-| 菜单栏按钮点击 | 必须 | 必须 | 回归 | 回归 | - | - |
+| 菜单栏按钮点击 | 必须 | 必须 | 回归 | 回归 | 回归 | 回归 |
 | 菜单栏 hover 交互 | N/A(系统Bug) | 回归 | 回归 | 回归 | 回归 | 回归 |
 | Liquid Glass 视觉 | 必须 | 必须 | N/A | N/A | N/A | N/A |
 | 浮动控制面板 | 必须 | 回归 | 回归 | 回归 | 回归 | 回归 |
