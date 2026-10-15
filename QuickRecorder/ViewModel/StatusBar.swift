@@ -35,6 +35,15 @@ struct StatusBarItem: View {
                         .cornerRadius(4)
                     HStack(spacing: 4) {
                         if miniStatusBar {
+                            // macOS 27 renders the elapsed time followed by the always-visible buttons
+                            // (hover-driven reveal is unavailable, FB23329983); macOS <= 26 keeps the
+                            // original collapsed (time only) / hover-expanded (buttons only) layout.
+                            if isMacOS27 || !isHovering {
+                                Text(recordingLength)
+                                    .foregroundStyle(.white)
+                                    .font(.system(size: 15).monospaced())
+                                    .offset(x: 0.5)
+                            }
                             if isMacOS27 || isHovering {
                                 Button(action: {
                                     if SCContext.streamType == .idevice {
@@ -87,11 +96,6 @@ struct StatusBarItem: View {
                                             .frame(width: 16, alignment: .center)
                                     }).buttonStyle(.plain)
                                 }
-                            } else {
-                                Text(recordingLength)
-                                    .foregroundStyle(.white)
-                                    .font(.system(size: 15).monospaced())
-                                    .offset(x: 0.5)
                             }
                         } else {
                             Group {
@@ -141,22 +145,25 @@ struct StatusBarItem: View {
                     if SCContext.autoStop != 0 && timePassed / 60 >= CGFloat(SCContext.autoStop) { SCContext.stopRecording() }
 
                     if isMacOS27 {
-                        // macOS 27: occlusionState unreliable, use visibleFrame to detect menu bar auto-hide
+                        // macOS 27: occlusionState is unreliable (FB23349447), so menu-bar visibility is a
+                        // best-effort composite of the visibleFrame geometry and the status item's own
+                        // window visibility (the bar can occupy space while our item is pushed out by the
+                        // notch / a crowded bar, which is exactly when the floating panel is needed).
                         let mainPanelVisible = NSApp.windows.contains(where: { $0.title == "QuickRecorder".local && $0.isVisible })
                         if mainPanelVisible {
                             NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.close()
                             return
                         }
                         guard let screen = SCContext.getScreenWithMouse() else { return }
-                        let menuBarVisible = screen.visibleFrame.maxY < screen.frame.maxY
-                        if SCContext.streamType != nil && !menuBarVisible && !(NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.isVisible ?? false) {
-                            let width = getStatusBarWidth()
-                            let wX = (screen.frame.width - width) / 2
-                            let contentView = NSHostingView(rootView: StatusBarItem())
-                            contentView.frame = NSRect(x: wX, y: screen.visibleFrame.maxY, width: width, height: 24)
-                            controlPanel.setFrame(contentView.frame, display: true)
-                            controlPanel.contentView = contentView
-                            controlPanel.makeKeyAndOrderFront(nil)
+                        let menuBarOccupiesSpace = screen.visibleFrame.maxY < screen.frame.maxY
+                        let itemReachable = statusBarItem.button?.window?.isVisible ?? false
+                        let menuBarVisible = menuBarOccupiesSpace && itemReachable
+                        if menuBarVisible {
+                            NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.close()
+                            return
+                        }
+                        if SCContext.streamType != nil && !(NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.isVisible ?? false) {
+                            showFloatingControlPanel(on: screen)
                         }
                     } else {
                         // macOS 26-: original occlusionState logic
@@ -164,13 +171,7 @@ struct StatusBarItem: View {
                             if visible { NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.close(); return }
                             if SCContext.streamType != nil && !visible && !(NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.isVisible ?? false) {
                                 guard let screen = SCContext.getScreenWithMouse() else { return }
-                                let width = getStatusBarWidth()
-                                let wX = (screen.frame.width - width) / 2
-                                let contentView = NSHostingView(rootView: StatusBarItem())
-                                contentView.frame = NSRect(x: wX, y: screen.visibleFrame.maxY, width: width, height: 24)
-                                controlPanel.setFrame(contentView.frame, display: true)
-                                controlPanel.contentView = contentView
-                                controlPanel.makeKeyAndOrderFront(nil)
+                                showFloatingControlPanel(on: screen)
                             }
                         }
                     }
@@ -243,6 +244,19 @@ struct StatusBarItem: View {
             }
         }
     }
+}
+
+// Builds and shows the floating "Recording Controller" fallback panel centered on
+// `screen`, just below the menu-bar edge. Shared by the macOS 27 and <= 26 branches
+// of the updateTimer logic (identical action, different conditions).
+private func showFloatingControlPanel(on screen: NSScreen) {
+    let width = getStatusBarWidth()
+    let wX = (screen.frame.width - width) / 2
+    let contentView = NSHostingView(rootView: StatusBarItem())
+    contentView.frame = NSRect(x: wX, y: screen.visibleFrame.maxY, width: width, height: 24)
+    controlPanel.setFrame(contentView.frame, display: true)
+    controlPanel.contentView = contentView
+    controlPanel.makeKeyAndOrderFront(nil)
 }
 
 func updateStatusBar() {

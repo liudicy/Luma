@@ -465,12 +465,15 @@ func findNSSplitVIew(view: NSView?) -> NSSplitView? {
 
 func getStatusBarWidth() -> CGFloat {
     @AppStorage("miniStatusBar") var miniStatusBar: Bool = false
+    // Mini mode widens to the non-mini layout on macOS 27: hover-driven reveal is
+    // unavailable (FB23329983), so the item always renders time + buttons together.
+    let useMiniWidth = miniStatusBar && !isMacOS27
     var width = 158.0
     switch SCContext.streamType {
-    case nil: width = miniStatusBar ? 36.0 : 36.0
-    case .idevice: width = miniStatusBar ? 68.0 : 138.0
-    case .systemaudio: width = miniStatusBar ? 68.0 : 114.0
-    default: width = miniStatusBar ? 78.0 : 158.0
+    case nil: width = useMiniWidth ? 36.0 : 36.0
+    case .idevice: width = useMiniWidth ? 68.0 : 138.0
+    case .systemaudio: width = useMiniWidth ? 68.0 : 114.0
+    default: width = useMiniWidth ? 78.0 : 158.0
     }
     return width
 }
