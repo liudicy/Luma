@@ -18,8 +18,10 @@ QuickRecorder 是一款基于 ScreenCaptureKit 的 macOS 屏幕录制工具，�
 ### 1.2 非目标
 
 - 不迁移到 Swift 6 语言模式（保持 Swift 5 模式 + Xcode 27 SDK 编译）。
-- 不重构录制引擎核心架构（RecordEngine / SCContext 的录制逻辑不变）。
+- 不重构录制引擎核心架构（RecordEngine / SCContext 的录制逻辑不变；仅修复权限重试缺陷，见 §4.1.7）。
 - 不新增功能，仅做适配和修复。
+- 本地化只维护简体中文与繁体中文（英文为开发语言默认值）。`it.lproj`（意大利语）不在本 fork 的维护范围内，新增文案回退到英文。
+- 移除面向维护者本人的收款/赞助信息（README 的 Donate / 赞助 区块与 `img/donate.png`）；`appcast.xml` 中原作者历史版本的更新日志保持原样，不视为本 fork 的收款信息。
 
 ## 2. 现状分析
 
@@ -177,6 +179,30 @@ let isMacOS27 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 2
 - 保留紫色主色调（mypurple: P3 #5756CF light / #6261EA dark）作为品牌色。
 - 玻璃层效果：半透明玻璃覆盖 + 底部高光反射。
 - 输出所有必需尺寸（16/32/64/128/256/512/1024px @1x/@2x）。
+
+#### 4.1.7 代码签名与屏幕录制授权持久化
+
+**问题**：真机验证发现反复弹出屏幕录制授权请求，即使系统设置里开关已打开、重启应用后仍然继续弹窗。
+
+**根因（已由系统日志证实）**：`tccd` 明确报告
+
+```
+Failed to match existing code requirement for subject com.liudicy.QuickRecorder
+and service kTCCServiceScreenCapture
+    cdhash H"713dd65d…" or cdhash H"6eb608e4…"
+```
+
+构建产物为 `flags=0x20002(adhoc,linker-signed)`、`TeamIdentifier=not set`。TCC 在没有 Team ID 的情况下只能把授权绑定到二进制的 cdhash，而每次重新链接/构建 cdhash 都会变化，于是系统设置里的开关指向旧身份，新二进制永远匹配失败，被判定为"未决定/未授权"并重新弹窗。
+
+**放大器**：`SCContext.updateAvailableContent`（私有重载）在收到 `SCStreamError.userDeclined` 时以 1 秒间隔无限重试 `SCShareableContent`，把一次匹配失败放大成持续的弹窗风暴。
+
+**修复要求**：
+
+1. 用带 Team ID 的证书签名构建，使 TCC 的设计要求（Designated Requirement）绑定到"证书 + Bundle ID"而非 cdhash，授权可在重新构建后保持不变。`DEVELOPMENT_TEAM[sdk=macosx*]` 改为 fork 维护者的 Team ID，`CODE_SIGN_STYLE` 使用 Automatic。
+2. 重试必须有上限：`userDeclined` 最多重试 3 次、间隔 2 秒，超限后停止并交由既有权限提示处理（不改动录制引擎其余逻辑）。
+3. 首次以新身份启动前，需清理指向旧身份的失效授权：`tccutil reset ScreenCapture com.liudicy.QuickRecorder`。
+
+**签名成本说明**：Sparkle 的 EdDSA 密钥对由本地 `generate_keys` 生成，与苹果开发者账户无关；让屏幕录制授权持久化只需免费的 Apple ID 个人团队签发的 "Apple Development" 证书；只有对外分发（Developer ID + 公证，避免 Gatekeeper 拦截）才需要付费的 Apple Developer Program。
 
 ### 4.2 Phase 2：菜单栏 Bug 修复
 

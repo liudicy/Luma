@@ -50,6 +50,10 @@ class SCContext {
     static var application: [SCRunningApplication]?
     static var streamType: StreamType?
     static var availableContent: SCShareableContent?
+    /// TCC reports a denied *or unmatched-signature* request as `userDeclined`, so retrying it
+    /// forever turns one failed request into an endless stream of permission prompts.
+    private static var declinedRetries = 0
+    private static let maxDeclinedRetries = 3
     static let excludedApps = ["", "com.apple.dock", "com.apple.screencaptureui", "com.apple.controlcenter", "com.apple.notificationcenterui", "com.apple.systemuiserver", "com.apple.WindowManager", "dev.mnpn.Azayaka", "com.gaosun.eul", "com.pointum.hazeover", "net.matthewpalmer.Vanilla", "com.dwarvesv.minimalbar", "com.bjango.istatmenus.status"]
     
     static func updateAvailableContentSync() -> SCShareableContent? {
@@ -69,8 +73,9 @@ class SCContext {
         SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: true) { [self] content, error in
             if let error = error {
                 switch error {
-                case SCStreamError.userDeclined:
-                    DispatchQueue.global().asyncAfter(deadline: .now() + 1) {
+                case SCStreamError.userDeclined where declinedRetries < maxDeclinedRetries:
+                    declinedRetries += 1
+                    DispatchQueue.global().asyncAfter(deadline: .now() + 2) {
                         self.updateAvailableContent() {_ in}
                     }
                 default:
@@ -80,6 +85,7 @@ class SCContext {
                 return
             }
 
+            declinedRetries = 0
             availableContent = content
             if let displays = content?.displays, !displays.isEmpty {
                 completion(content) // 返回成功获取的 content
