@@ -290,7 +290,7 @@ struct SelectorView: View {
         .onHover{ hovering in
             backgroundOpacity = hovering ? 0.2 : 0.0001
         }
-        .qrGlassBackground(tint: .primary.opacity(backgroundOpacity), cornerRadius: 8, interactive: true)
+        .background(Color.clear.qrGlassBackground(tint: .primary.opacity(backgroundOpacity), cornerRadius: 8, interactive: true))
     }
 }
 
@@ -301,9 +301,13 @@ struct CountdownView: View {
 
     var body: some View {
         ZStack {
-            Color.clear
-                .qrGlassBackground(tint: .mypurple, cornerRadius: 10, interactive: true)
-                .environment(\.colorScheme, .dark)
+            if #available(macOS 26, *) {
+                Color.clear
+                    .qrGlassBackground(tint: .mypurple, cornerRadius: 10, interactive: true)
+                    .environment(\.colorScheme, .dark)
+            } else {
+                Color.mypurple.environment(\.colorScheme, .dark)
+            }
             Text("\(countdownValue)")
                 .font(.system(size: 72))
                 .foregroundColor(.white)

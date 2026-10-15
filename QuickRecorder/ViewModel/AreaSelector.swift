@@ -86,8 +86,13 @@ struct AreaSelector: View {
     
     var body: some View {
         ZStack {
-            Color.clear
-                .qrGlassBackground(tint: Color(nsColor: .windowBackgroundColor), cornerRadius: 10)
+            if #available(macOS 26, *) {
+                Color.clear
+                    .qrGlassBackground(tint: Color(nsColor: .windowBackgroundColor), cornerRadius: 10)
+            } else {
+                Color(nsColor: NSColor.windowBackgroundColor)
+                    .cornerRadius(10)
+            }
             VStack {
                 HStack(spacing: 6) {
                     Spacer()
