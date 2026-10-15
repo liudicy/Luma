@@ -77,7 +77,8 @@ struct iDevicePopoverView: View {
                         .frame(maxWidth: .infinity)
                         .background(
                             RoundedRectangle(cornerRadius: 5)
-                                .foregroundStyle(.primary)
+                                .fill(Color.clear)
+                                .qrGlassBackground(tint: .primary, cornerRadius: 5)
                                 .opacity(hoverIndex == index ? 0.2 : 0.0)
                         )
                         .onHover{ hovering in
