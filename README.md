@@ -25,6 +25,18 @@ Download the latest installation file of this fork [here](../../releases/latest)
 
 > This fork has no Homebrew tap. The upstream command `brew install lihaoyun6/tap/quickrecorder` installs the **original** QuickRecorder by [lihaoyun6](https://github.com/lihaoyun6/QuickRecorder), not this fork, so please use the Releases page above to get the macOS 27 / Liquid Glass build.
 
+### Building:
+```sh
+# unsigned local build (fine for trying the UI out)
+xcodebuild -scheme QuickRecorder -configuration Release CODE_SIGNING_ALLOWED=NO build
+
+# signed build — requires a valid "Apple Development" certificate in your keychain
+./Scripts/build_and_check_signing.sh
+```
+`QuickRecorder.xcodeproj` ships with `DEVELOPMENT_TEAM` set to the maintainer's team id. Change it to **your own** team id (Xcode > Settings > Accounts > Manage Certificates > + > Apple Development; a free Apple ID is enough), or leave it empty and build with `CODE_SIGNING_ALLOWED=NO`.
+
+This is not cosmetic: Screen Recording permission granted to an **unsigned or ad-hoc-signed** build is bound to the binary's cdhash, so every rebuild invalidates it and macOS keeps re-prompting even though the System Settings toggle looks enabled. A team-bound signature is what makes the grant stick.
+
 ### Features/Usage:
 - You can use QuickRecorder to record your screens / windows / applications / mobile devices... etc.
 

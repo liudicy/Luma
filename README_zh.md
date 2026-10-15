@@ -25,6 +25,18 @@
 
 > 本仓库未提供 Homebrew 安装源. 原版安装命令 `brew install lihaoyun6/tap/quickrecorder` 安装的是 [lihaoyun6](https://github.com/lihaoyun6/QuickRecorder) 维护的**原版** QuickRecorder, 并非本分支版本, 请通过上方的 Releases 页面下载适配 macOS 27 / 液态玻璃的版本.
 
+### 本地构建:
+```sh
+# 不签名的本地构建（只看界面时够用）
+xcodebuild -scheme QuickRecorder -configuration Release CODE_SIGNING_ALLOWED=NO build
+
+# 签名构建 — 需要钥匙串里有一张有效的 Apple Development 证书
+./Scripts/build_and_check_signing.sh
+```
+工程里 `DEVELOPMENT_TEAM` 默认是维护者本人的 Team ID。自己构建时请改成**你自己的** Team ID（Xcode > 设置 > 账户 > 管理证书 > 新建 > Apple Development，免费 Apple ID 即可），或留空并用 `CODE_SIGNING_ALLOWED=NO` 构建。
+
+这一步不是可有可无的：**未签名或 ad-hoc 签名**的构建拿到的屏幕录制授权是绑在二进制 cdhash 上的，每次重新构建都会失效，于是系统设置里开关看着是开着的、macOS 却仍在反复要权限。只有用带 Team ID 的证书签名，授权才会在重新构建后继续有效。
+
 ### 特色 / 使用:
 - 使用 SwiftUI 编写, 体积小巧轻量化. 软件大小仅有不到 10MB, 无任何累赘功能. 
 
