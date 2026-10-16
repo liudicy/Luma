@@ -3,7 +3,7 @@
 </p>
 <h1 align="center">Luma</h1>
 <p align="center">简洁、原生的 macOS 录屏工具。</p>
-<p align="center"><a href="README.md">English</a> · <a href="https://github.com/liudicy/QuickRecorder/releases">下载版本</a> · <a href="https://github.com/liudicy/QuickRecorder/issues">反馈问题</a></p>
+<p align="center"><a href="README.md">English</a> · <a href="https://github.com/liudicy/Luma/releases">下载版本</a> · <a href="https://github.com/liudicy/Luma/issues">反馈问题</a></p>
 
 录制整个屏幕、一个窗口、某个应用，或你框选的一小块区域。Luma 将录制入口放进一个轻巧的面板，支持系统声音、麦克风与菜单栏控制，让录屏随手可用。
 
@@ -37,7 +37,7 @@
 
 ### 安装
 
-当前源码版本为 **1.7.1**。可分发安装包发布后会列在 [Releases](https://github.com/liudicy/QuickRecorder/releases)。下载时请核对版本名称与说明，旧 QuickRecorder 安装包不包含本次 Luma 修改。也可以按下方步骤自行构建签名版本。
+当前源码版本为 **1.7.1**。可分发安装包发布后会列在 [Releases](https://github.com/liudicy/Luma/releases)。下载时请核对版本名称与说明，旧 QuickRecorder 安装包不包含本次 Luma 修改。也可以按下方步骤自行构建签名版本。
 
 最低部署版本为 **macOS 12.3**。系统声音需要 macOS 13 及以上，演讲者前置需要 macOS 14 及以上，Liquid Glass 需要 macOS 26 及以上。编译需要 **Xcode 26 或更新版本**。旧系统、Intel 真机和外接录制设备仍需更多实测，最低部署版本不等于完整兼容承诺。
 
@@ -50,8 +50,8 @@
 ## 从源码构建
 
 ```sh
-git clone https://github.com/liudicy/QuickRecorder.git
-cd QuickRecorder
+git clone https://github.com/liudicy/Luma.git
+cd Luma
 ./Scripts/build_and_check_signing.sh
 open build/signed-DerivedData/Build/Products/Release/Luma.app
 ```
@@ -69,10 +69,10 @@ swift Scripts/generate_icon.swift
 
 ## 参与贡献
 
-欢迎[提交问题](https://github.com/liudicy/QuickRecorder/issues)，请附上应用及 macOS 版本、安装或签名方式、录制模式、音频设置和复现步骤，并说明是否发生在暂停继续或变更权限之后。请避免上传包含隐私的录屏。
+欢迎[提交问题](https://github.com/liudicy/Luma/issues)，请附上应用及 macOS 版本、安装或签名方式、录制模式、音频设置和复现步骤，并说明是否发生在暂停继续或变更权限之后。请避免上传包含隐私的录屏。
 
 ## 开源声明
 
 Luma 是基于 [lihaoyun6](https://github.com/lihaoyun6) 及其贡献者创作的 [QuickRecorder](https://github.com/lihaoyun6/QuickRecorder) 独立维护的分支，继续采用 **GNU AGPL 第 3 版**。原始 [LICENSE](LICENSE) 全文及源码版权声明均予以保留；Luma 的修改与新图标采用相同协议。
 
-[NOTICE](NOTICE) 记录项目来源及包含 Azayaka 衍生代码的说明，[THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt) 收录依赖许可证与版权信息。这三个文件同时随应用打包。本项目维护地址为 [liudicy/QuickRecorder](https://github.com/liudicy/QuickRecorder)。
+[NOTICE](NOTICE) 记录项目来源及包含 Azayaka 衍生代码的说明，[THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt) 收录依赖许可证与版权信息。这三个文件同时随应用打包。本项目维护地址为 [liudicy/Luma](https://github.com/liudicy/Luma)。

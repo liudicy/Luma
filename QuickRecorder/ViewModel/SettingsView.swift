@@ -130,9 +130,9 @@ struct GeneralView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Button(action: {
-                            NSWorkspace.shared.open(URL(string: "https://github.com/liudicy/QuickRecorder")!)
+                            NSWorkspace.shared.open(URL(string: "https://github.com/liudicy/Luma")!)
                         }) {
-                            Text("liudicy/QuickRecorder")
+                            Text("liudicy/Luma")
                                 .font(.caption)
                                 .foregroundStyle(.blue)
                         }

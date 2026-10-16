@@ -15,7 +15,7 @@
 - 最低部署目标：`MACOSX_DEPLOYMENT_TARGET = 12.3`（不变）
 - Swift 语言模式：Swift 5（不启用 Swift 6 并发检查）
 - 新 Bundle ID：`com.liudicy.QuickRecorder`
-- Fork 仓库地址：`https://github.com/liudicy/QuickRecorder`
+- Fork 仓库地址：`https://github.com/liudicy/Luma`
 - 原版归属：`https://github.com/lihaoyun6/QuickRecorder`
 - 所有 macOS 26+ API 用 `#available(macOS 26, *)` 守卫
 - 所有 macOS 27 特有用 `isMacOS27`（`majorVersion >= 27`）守卫
@@ -137,7 +137,7 @@ git commit -m "chore: sync bundle ID references to com.liudicy.QuickRecorder"
 
 - [ ] **Step 1: 修改 SUFeedURL**
 
-`Info.plist:48` 中 `SUFeedURL` 的值从 `https://raw.githubusercontent.com/lihaoyun6/QuickRecorder/main/appcast.xml` 改为 `https://raw.githubusercontent.com/liudicy/QuickRecorder/main/appcast.xml`。
+`Info.plist:48` 中 `SUFeedURL` 的值从 `https://raw.githubusercontent.com/lihaoyun6/QuickRecorder/main/appcast.xml` 改为 `https://raw.githubusercontent.com/liudicy/Luma/main/appcast.xml`。
 
 - [ ] **Step 2: 生成新的 EdDSA 密钥对**
 
@@ -995,7 +995,7 @@ SGroupBox(label: "About") {
         Text("Based on [lihaoyun6/QuickRecorder](https://github.com/lihaoyun6/QuickRecorder)")
             .font(.caption)
             .foregroundStyle(.secondary)
-        Text("Fork: [liudicy/QuickRecorder](https://github.com/liudicy/QuickRecorder)")
+        Text("Fork: [liudicy/Luma](https://github.com/liudicy/Luma)")
             .font(.caption)
             .foregroundStyle(.secondary)
         Text("Version 1.7.0 (170)")

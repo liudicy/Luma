@@ -3,7 +3,7 @@
 </p>
 <h1 align="center">Luma</h1>
 <p align="center">A simple, native screen recorder for macOS.</p>
-<p align="center"><a href="README_zh.md">简体中文</a> · <a href="https://github.com/liudicy/QuickRecorder/releases">Releases</a> · <a href="https://github.com/liudicy/QuickRecorder/issues">Report an issue</a></p>
+<p align="center"><a href="README_zh.md">简体中文</a> · <a href="https://github.com/liudicy/Luma/releases">Releases</a> · <a href="https://github.com/liudicy/Luma/issues">Report an issue</a></p>
 
 Record a screen, a window, an application or just the area you need. Luma brings recording sources into one small panel, with system audio, an optional microphone and controls in the menu bar.
 
@@ -37,7 +37,7 @@ This version repairs permission handling, replaces hover-dependent menu bar cont
 
 ### Installation
 
-The current source version is **1.7.1**. Packaged downloads, when available, are listed under [Releases](https://github.com/liudicy/QuickRecorder/releases). Check the release name and notes: older QuickRecorder packages do not contain this Luma version. You can also build the signed app from source below.
+The current source version is **1.7.1**. Packaged downloads, when available, are listed under [Releases](https://github.com/liudicy/Luma/releases). Check the release name and notes: older QuickRecorder packages do not contain this Luma version. You can also build the signed app from source below.
 
 The minimum deployment target is **macOS 12.3**. System audio requires macOS 13+, Presenter Overlay requires macOS 14+, and Liquid Glass requires macOS 26+. Build with **Xcode 26 or later**. Older systems, Intel hardware and external recording devices need additional runtime coverage; the deployment target alone is not a compatibility guarantee.
 
@@ -50,8 +50,8 @@ Local builds should use a consistent Apple signing identity. Switching between s
 ## Build from source
 
 ```sh
-git clone https://github.com/liudicy/QuickRecorder.git
-cd QuickRecorder
+git clone https://github.com/liudicy/Luma.git
+cd Luma
 ./Scripts/build_and_check_signing.sh
 open build/signed-DerivedData/Build/Products/Release/Luma.app
 ```
@@ -69,10 +69,10 @@ swift Scripts/generate_icon.swift
 
 ## Contribute
 
-[Open an issue](https://github.com/liudicy/QuickRecorder/issues) with the app/macOS versions, installation or signing method, recording mode, audio settings and steps to reproduce. Note whether the issue follows pause/resume or a permission change. Please keep private screen content out of reports.
+[Open an issue](https://github.com/liudicy/Luma/issues) with the app/macOS versions, installation or signing method, recording mode, audio settings and steps to reproduce. Note whether the issue follows pause/resume or a permission change. Please keep private screen content out of reports.
 
 ## Open-source notice
 
 Luma is an independently maintained fork of [QuickRecorder](https://github.com/lihaoyun6/QuickRecorder) by [lihaoyun6](https://github.com/lihaoyun6) and its contributors. It continues under **GNU AGPL version 3**. The original [LICENSE](LICENSE) and source copyright notices are preserved; Luma's modifications and new icon use the same license.
 
-[NOTICE](NOTICE) records the project provenance, including Azayaka-derived recording code. [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt) contains dependency licenses and copyright notices. All three files are included in the app bundle. This project is maintained at [liudicy/QuickRecorder](https://github.com/liudicy/QuickRecorder).
+[NOTICE](NOTICE) records the project provenance, including Azayaka-derived recording code. [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt) contains dependency licenses and copyright notices. All three files are included in the app bundle. This project is maintained at [liudicy/Luma](https://github.com/liudicy/Luma).

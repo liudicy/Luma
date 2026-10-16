@@ -45,7 +45,7 @@
 	<key>OSAScriptingDefinition</key>
 	<string>Scriptable</string>
 	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/liudicy/QuickRecorder/main/appcast.xml</string>
+	<string>https://raw.githubusercontent.com/liudicy/Luma/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>OuhGb6zG1v3E96t4cXiJImGwsGq36q3/ggiMMAVtq8k=</string>
 	<key>UTExportedTypeDeclarations</key>

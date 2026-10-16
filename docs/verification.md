@@ -53,3 +53,7 @@ The repository retains existing Swift concurrency/deprecation warnings in select
 ## Repository presentation refresh
 
 On 2026-10-16, the signed 1.7.1 app was relaunched and the main panel and settings were visually inspected again. Fresh launcher, recording-settings and paused native-menu screenshots are checked into `img/screenshots/`; the earlier no-display limitation no longer applied. Settings now use Luma in all three branding labels, including the English fallback. English and Chinese READMEs lead with Luma, with upstream provenance and license references confined to the open-source notice. Original screenshots were replaced; license texts and original source copyright notices remain intact. A system-audio-only session was started, paused and stopped to capture the native menu.
+
+## Repository rename
+
+The GitHub repository is named `liudicy/Luma`. README clone instructions, release/issue links, About/Credits source links and the Sparkle feed URL use the new repository path. The Xcode project/target, local checkout directory and bundle identifier remain unchanged.
