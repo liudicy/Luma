@@ -138,11 +138,17 @@ struct VideoTrimmerView: View {
                 RecorderPlayerView(playerView: playerViewModel.playerView)
                     .onAppear {playerViewModel.loadVideo(fromUrl: videoURL) {}}
                     .padding(4)
-                    .background(
-                        Rectangle()
-                            .foregroundStyle(.black)
-                            .cornerRadius(5)
-                    )
+                    .background {
+                        if #available(macOS 26, *) {
+                            Rectangle()
+                                .fill(Color.clear)
+                                .qrGlassBackground(tint: .black, cornerRadius: 5)
+                        } else {
+                            Rectangle()
+                                .foregroundStyle(.black)
+                                .cornerRadius(5)
+                        }
+                    }
             }.padding([.bottom, .leading, .trailing])
         }
         .padding(.top, -22)

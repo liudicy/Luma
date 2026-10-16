@@ -1,240 +1,133 @@
-//
-//  StatusBarItem.swift
-//  QuickRecorder
-//
-//  Created by apple on 2024/4/16.
-//
-
+// Recording controls use AppKit's menu tracking, including while another app is active.
 import SwiftUI
 
 class PopoverState: ObservableObject {
     static let shared = PopoverState()
-    @Published var isShowing: Bool = false
-    @Published var isPaused: Bool = false
+    @Published var isShowing = false
+    @Published var isPaused = false
 }
 
+final class RecordingStatusController: NSObject, NSMenuDelegate {
+    static let shared = RecordingStatusController()
+    private var timer: Timer?
+    private let menu = NSMenu()
+    private var menuOpen = false
+    private var controllerPinned = false
+
+    func install() {
+        menu.delegate = self
+        menu.autoenablesItems = false
+        statusBarItem.menu = menu
+        timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in self?.refresh() }
+        RunLoop.main.add(timer!, forMode: .common)
+        refresh()
+    }
+
+    func refresh() {
+        guard let item = statusBarItem, let button = item.button else { return }
+        let recording = SCContext.streamType != nil
+        item.isVisible = recording || ud.bool(forKey: "showMenubar")
+        button.image = NSImage(systemSymbolName: recording ? (SCContext.isPaused ? "pause.circle.fill" : "record.circle") : "record.circle", accessibilityDescription: "Luma")
+        button.image?.isTemplate = true
+        button.imagePosition = .imageLeading
+        button.title = recording ? " " + SCContext.getRecordingLength() : ""
+        button.font = .monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+        button.toolTip = recording ? "Recording controls".local : "Luma"
+        button.setAccessibilityLabel(recording ? "Luma · \(SCContext.getRecordingLength())" : "Luma")
+        if !menuOpen { rebuildMenu() }
+
+        if recording, !SCContext.isStopping, SCContext.autoStop > 0,
+           SCContext.timePassed >= Double(SCContext.autoStop * 60) { stop(nil) }
+        guard recording else { controllerPinned = false; controlPanel.orderOut(nil); return }
+        // A native floating controller remains reachable in fullscreen or a crowded menu bar.
+        let reachable = button.window?.occlusionState.contains(.visible) ?? false
+        if (!reachable || controllerPinned), !controlPanel.isVisible, let screen = SCContext.getScreenWithMouse() {
+            let size = NSSize(width: 240, height: 44)
+            controlPanel.contentView = NSHostingView(rootView: StatusBarItem())
+            controlPanel.setFrame(NSRect(x: screen.frame.midX - size.width / 2,
+                y: screen.visibleFrame.maxY - size.height - 8, width: size.width, height: size.height), display: true)
+            controlPanel.orderFrontRegardless()
+        } else if reachable && !controllerPinned { controlPanel.orderOut(nil) }
+    }
+
+    func menuWillOpen(_ menu: NSMenu) { menuOpen = true; rebuildMenu() }
+    func menuDidClose(_ menu: NSMenu) { menuOpen = false; refresh() }
+
+    private func add(_ title: String, _ action: Selector, enabled: Bool = true) {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+        item.target = self
+        item.isEnabled = enabled
+        menu.addItem(item)
+    }
+
+    private func rebuildMenu() {
+        menu.removeAllItems()
+        if SCContext.streamType != nil {
+            add(SCContext.isStopping ? "Saving…".local : "Stop Recording".local, #selector(stop(_:)), enabled: !SCContext.isStopping)
+            if SCContext.streamType != .idevice {
+                add(SCContext.isPaused ? "Resume Recording".local : "Pause Recording".local,
+                    #selector(pause(_:)), enabled: !SCContext.isStopping && SCContext.startTime != nil)
+            }
+            if SCContext.streamType != .systemaudio && SCContext.streamType != .idevice {
+                add("Camera…".local, #selector(camera(_:)), enabled: !SCContext.isStopping)
+                add("Save Current Frame".local, #selector(snapshot(_:)), enabled: !SCContext.isStopping)
+            }
+            add("Show Recording Controls".local, #selector(showController(_:)))
+            menu.addItem(.separator())
+        }
+        add("Open Luma".local, #selector(open(_:)))
+        add("Settings…".local, #selector(settings(_:)))
+        menu.addItem(.separator())
+        add("Quit Luma".local, #selector(quit(_:)))
+    }
+
+    @objc private func showController(_ sender: Any?) { controllerPinned = true; refresh() }
+    @objc private func stop(_ sender: Any?) {
+        if SCContext.streamType == .idevice { AVOutputClass.shared.stopRecording() }
+        else { SCContext.stopRecording() }
+    }
+    @objc private func pause(_ sender: Any?) { SCContext.pauseRecording(); refresh() }
+    @objc private func snapshot(_ sender: Any?) { SCContext.saveFrame = true }
+    @objc private func open(_ sender: Any?) {
+        NSApp.activate(ignoringOtherApps: true)
+        _ = AppDelegate.shared.applicationShouldHandleReopen(NSApp, hasVisibleWindows: true)
+    }
+    @objc private func settings(_ sender: Any?) { AppDelegate.shared.openSettingPanel() }
+    @objc private func quit(_ sender: Any?) { NSApp.terminate(nil) }
+    @objc private func camera(_ sender: Any?) {
+        AppDelegate.shared.createNewWindow(view: CameraPopoverView(closePopover: {
+            NSApp.windows.first(where: { $0.title == "Camera".local })?.close()
+        }), title: "Camera".local)
+    }
+}
+
+// Floating fallback: no outer gesture, hover-only controls, or glass hit-test overrides.
 struct StatusBarItem: View {
-    @State private var deviceWindowIsShowing = true
-    @State private var isMainMenuShowing = false
-    @State private var isHovering = false
-    @State private var recordingLength = "00:00"
-    //@State private var isPassed = SCContext.isPaused
-    @StateObject private var popoverState = PopoverState.shared
-    //@NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @AppStorage("miniStatusBar") private var miniStatusBar: Bool = false
-    //@AppStorage("highlightMouse") private var highlightMouse: Bool = false
-    private var appDelegate = AppDelegate.shared
-    
+    @StateObject private var state = PopoverState.shared
     var body: some View {
-        HStack(spacing: 0) {
-            if SCContext.streamType != nil {
-                ZStack {
-                    Rectangle()
-                        .fill(Color.mypurple)
-                        .shadow(color: .black.opacity(0.3), radius: 4)
-                        .cornerRadius(4)
-                    HStack(spacing: 4) {
-                        if miniStatusBar {
-                            if isHovering {
-                                Button(action: {
-                                    if SCContext.streamType == .idevice {
-                                        AVOutputClass.shared.stopRecording()
-                                    } else {
-                                        SCContext.stopRecording()
-                                    }
-                                }, label: {
-                                    ZStack {
-                                        Image(systemName: "circle.fill")
-                                            .font(.system(size: 10))
-                                            .foregroundStyle(.red)
-                                            .frame(width: 10, alignment: .center)
-                                        Image(systemName: "stop.circle.fill")
-                                            .font(.system(size: 16))
-                                            .foregroundStyle(.white)
-                                            .frame(width: 16, alignment: .center)
-                                    }
-                                }).buttonStyle(.plain)
-                                if SCContext.streamType != .idevice {
-                                    Button(action: {
-                                        SCContext.pauseRecording()
-                                    }, label: {
-                                        Image(systemName: popoverState.isPaused ? "play.circle.fill" : "pause.circle.fill")
-                                            .font(.system(size: 16))
-                                            .foregroundStyle(.white)
-                                            .frame(width: 16, alignment: .center)
-                                    }).buttonStyle(.plain)
-                                } else {
-                                    Button(action:{
-                                        DispatchQueue.main.async {
-                                            if deviceWindow.isVisible { deviceWindow.close() } else { deviceWindow.orderFront(nil) }
-                                            deviceWindowIsShowing = deviceWindow.isVisible
-                                        }
-                                    }, label: {
-                                        Image(systemName: "eye.circle.fill")
-                                            .font(.system(size: 16))
-                                            .foregroundStyle(.white)
-                                            .frame(width: 16, alignment: .center)
-                                            .opacity(deviceWindowIsShowing ? 1 : 0.7)
-                                    }).buttonStyle(.plain)
-                                }
-                                if SCContext.streamType != .systemaudio && SCContext.streamType != .idevice && SCContext.streamType != .window {
-                                    Button(action:{
-                                        popoverState.isShowing = true
-                                    }, label: {
-                                        Image(systemName: "camera.circle.fill")
-                                            .font(.system(size: 16))
-                                            .foregroundStyle(.white)
-                                            .frame(width: 16, alignment: .center)
-                                    }).buttonStyle(.plain)
-                                }
-                            } else {
-                                Text(recordingLength)
-                                    .foregroundStyle(.white)
-                                    .font(.system(size: 15).monospaced())
-                                    .offset(x: 0.5)
-                            }
-                        } else {
-                            Group {
-                                Button(action: {
-                                    if SCContext.streamType == .idevice {
-                                        AVOutputClass.shared.stopRecording()
-                                    } else {
-                                        SCContext.stopRecording()
-                                    }
-                                }, label: {
-                                    ZStack {
-                                        Image(systemName: "circle.fill")
-                                            .font(.system(size: 10))
-                                            .foregroundStyle(.red)
-                                            .frame(width: 10, alignment: .center)
-                                        Image(systemName: "stop.circle.fill")
-                                            .font(.system(size: 16))
-                                            .foregroundStyle(.white)
-                                            .frame(width: 16, alignment: .center)
-                                    }
-                                }).buttonStyle(.plain)
-                                if SCContext.streamType != .idevice {//&& SCContext.streamType != .systemaudio {
-                                    Button(action: {
-                                        SCContext.pauseRecording()
-                                    }, label: {
-                                        Image(systemName: popoverState.isPaused ? "play.circle.fill" : "pause.circle.fill")
-                                            .font(.system(size: 16))
-                                            .foregroundStyle(.white)
-                                            .frame(width: 16, alignment: .center)
-                                    }).buttonStyle(.plain)
-                                }
-                                Text(recordingLength)
-                                    .foregroundStyle(.white)
-                                    .font(.system(size: 15).monospaced())
-                                    .offset(x: 0.5)
-                            }
-                        }
-                    }
-                }
-                .padding([.leading,.trailing], 4)
-                .popover(isPresented: $popoverState.isShowing, arrowEdge: .bottom) {
-                    CameraPopoverView(closePopover: { popoverState.isShowing = false })
-                }
-                .onReceive(updateTimer) { t in
-                    recordingLength = SCContext.getRecordingLength()
-                    let timePassed = Date.now.timeIntervalSince(SCContext.startTime ?? t)
-                    if SCContext.autoStop != 0 && timePassed / 60 >= CGFloat(SCContext.autoStop) { SCContext.stopRecording() }
-                    if let visible = statusBarItem.button?.window?.occlusionState.contains(.visible) {
-                        if visible { NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.close(); return }
-                        if SCContext.streamType != nil  && !visible && !(NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.isVisible ?? false) {
-                            guard let screen = SCContext.getScreenWithMouse() else { return }
-                            let width = getStatusBarWidth()
-                            let wX = (screen.frame.width - width) / 2
-                            let contentView = NSHostingView(rootView: StatusBarItem())
-                            contentView.frame = NSRect(x: wX, y: screen.visibleFrame.maxY, width: width, height: 24)
-                            controlPanel.setFrame(contentView.frame, display: true)
-                            controlPanel.contentView = contentView
-                            controlPanel.makeKeyAndOrderFront(nil)
-                        }
-                    }
-                }
-                if !miniStatusBar {
-                    if SCContext.streamType != .systemaudio {
-                        if SCContext.streamType != .idevice {
-                            Button(action:{
-                                popoverState.isShowing = true
-                            }, label: {
-                                ZStack {
-                                    Rectangle()
-                                        .fill(SCContext.isCameraRunning() ? Color.mygreen : .gray)
-                                        .shadow(color: .black.opacity(0.3), radius: 4)
-                                        .cornerRadius(4)
-                                    Image("camera")
-                                        .foregroundStyle(.white)
-                                }.frame(width: 36).padding([.leading,.trailing], 4)
-                            }).buttonStyle(.plain)
-                        } else {
-                            Button(action:{
-                                DispatchQueue.main.async {
-                                    if deviceWindow.isVisible { deviceWindow.close() } else { deviceWindow.orderFront(nil) }
-                                }
-                            }, label: {
-                                ZStack {
-                                    Rectangle()
-                                        .fill(deviceWindow.isVisible ? Color.myblue : .gray.opacity(0.7))
-                                        .shadow(color: .black.opacity(0.3), radius: 4)
-                                        .cornerRadius(4)
-                                    Image(systemName: "apps.ipad")
-                                        .font(.system(size: 16))
-                                        .foregroundStyle(.white)
-                                }.frame(width: 36).padding([.leading,.trailing], 4)
-                            })
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            } else if ud.bool(forKey: "showMenubar") {
-                Button(action: {
-                    popoverState.isShowing = true
-                }, label: {
-                    ZStack {
-                        Color.white.opacity(0.0001)
-                        Image(systemName: "dot.circle.and.hand.point.up.left.fill")
-                            .font(.system(size: 14, weight: .medium))
-                            .offset(y: 1)
-                    }
-                })
-                .buttonStyle(.plain)
-                .popover(isPresented: $popoverState.isShowing, arrowEdge: .bottom) {
-                    if #available(macOS 13, *) {
-                        ContentViewNew().onAppear{ closeAllWindow() }
-                    } else {
-                        ContentView(fromStatusBar: true)
-                            .onAppear{
-                                closeAllWindow()
-                                if isMacOS12 { NSApp.activate(ignoringOtherApps: true) }
-                            }
-                    }
-                }
+        HStack(spacing: 12) {
+            Button {
+                if SCContext.streamType == .idevice { AVOutputClass.shared.stopRecording() }
+                else { SCContext.stopRecording() }
+            } label: { Image(systemName: "stop.circle.fill").foregroundStyle(.red) }
+            .help("Stop Recording".local)
+            if SCContext.streamType != .idevice {
+                Button { SCContext.pauseRecording() } label: {
+                    Image(systemName: state.isPaused ? "play.circle.fill" : "pause.circle.fill")
+                }.help((state.isPaused ? "Resume Recording" : "Pause Recording").local)
+            }
+            TimelineView(.periodic(from: .now, by: 0.5)) { _ in
+                Text(SCContext.getRecordingLength()).monospacedDigit()
             }
         }
-        .onTapGesture {}
-        .onHover { hovering in
-            isHovering = hovering
-            hideMousePointer = hovering
-            hideScreenMagnifier = hovering
-        }
+        .font(.system(size: 20))
+        .buttonStyle(.plain)
+        .padding(10)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .disabled(SCContext.isStopping)
     }
 }
 
 func updateStatusBar() {
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-        if SCContext.streamType == nil && !ud.bool(forKey: "showMenubar") {
-            statusBarItem.isVisible = false
-            return
-        }
-        guard let button = statusBarItem.button else { return }
-        //let width = SCContext.streamType == nil ? 36 : ((SCContext.streamType == .idevice || SCContext.streamType == .systemaudio) ? 138 : 158)
-        let iconView = NSHostingView(rootView: StatusBarItem().padding(.top, isMacOS14 ? -2 : -1))
-        iconView.frame = NSRect(x: 0, y: 1, width: getStatusBarWidth(), height: isMacOS14 ? 22 : 21)
-        button.subviews = [iconView]
-        button.frame = iconView.frame
-        button.setAccessibilityLabel("QuickRecorder")
-        statusBarItem.isVisible = true
-    }
+    DispatchQueue.main.async { RecordingStatusController.shared.refresh() }
 }

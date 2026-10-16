@@ -26,6 +26,10 @@ struct ContentViewNew: View {
     
     var body: some View {
         ZStack {
+            if #available(macOS 26, *) {
+                Color.clear
+                    .qrGlassBackground(cornerRadius: 14)
+            }
             ZStack {
                 if isTodayChristmas() && isAllowChristmas() {
                     let images = ["snowflake1", "snowflake2", "snowflake3", "christmasTree1", "christmasTree2"]

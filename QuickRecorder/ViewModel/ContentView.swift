@@ -32,7 +32,7 @@ struct ContentView: View {
                 ZStack {
                     if !fromStatusBar {
                         Color.clear
-                            .background(.ultraThinMaterial)
+                            .qrGlassBackground(cornerRadius: 14)
                             .environment(\.controlActiveState, .active)
                     }
                     ZStack {
@@ -50,10 +50,12 @@ struct ContentView: View {
                     if #available(macOS 13, *) {
                         ZStack(alignment: Alignment(horizontal: .center, vertical: .bottom)) {
                             Button(action: {
-                                if let display = SCContext.getSCDisplayWithMouse() {
-                                    closeMainWindow()
-                                    appDelegate.createCountdownPanel(screen: display) {
-                                        AppDelegate.shared.prepRecord(type: "audio", screens: SCContext.getSCDisplayWithMouse(), windows: nil, applications: nil)
+                                SCContext.updateAvailableContent {
+                                    if let display = SCContext.getSCDisplayWithMouse() {
+                                        closeMainWindow()
+                                        appDelegate.createCountdownPanel(screen: display) {
+                                            AppDelegate.shared.prepRecord(type: "audio", screens: SCContext.getSCDisplayWithMouse(), windows: nil, applications: nil)
+                                        }
                                     }
                                 }
                             }, label: {
@@ -290,7 +292,7 @@ struct SelectorView: View {
         .onHover{ hovering in
             backgroundOpacity = hovering ? 0.2 : 0.0001
         }
-        .background( .primary.opacity(backgroundOpacity) )
+        .background(Color.clear.qrGlassBackground(tint: .primary.opacity(backgroundOpacity), cornerRadius: 8, interactive: true))
     }
 }
 
@@ -301,7 +303,13 @@ struct CountdownView: View {
 
     var body: some View {
         ZStack {
-            Color.mypurple.environment(\.colorScheme, .dark)
+            if #available(macOS 26, *) {
+                Color.clear
+                    .qrGlassBackground(tint: .mypurple, cornerRadius: 10, interactive: true)
+                    .environment(\.colorScheme, .dark)
+            } else {
+                Color.mypurple.environment(\.colorScheme, .dark)
+            }
             Text("\(countdownValue)")
                 .font(.system(size: 72))
                 .foregroundColor(.white)

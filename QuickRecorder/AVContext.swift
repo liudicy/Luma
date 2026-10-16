@@ -118,20 +118,12 @@ class AVOutputClass: NSObject, AVCaptureFileOutputRecordingDelegate, AVCaptureVi
     }
 
     public func stopRecording() {
-        if SCContext.captureSession.isRunning {
-            output.stopRecording()
-            SCContext.captureSession.stopRunning()
-            SCContext.previewSession.stopRunning()
-            SCContext.streamType = nil
-            SCContext.startTime = nil
-            DispatchQueue.main.async {
-                controlPanel.close()
-                deviceWindow.close()
-                updateStatusBar()
-            }
-        }
+        guard !SCContext.isStopping, let output, output.isRecording else { return }
+        SCContext.isStopping = true
+        output.stopRecording()
+        updateStatusBar()
     }
-    
+
     func closePreview() {
         if SCContext.isCameraRunning() {
             //SCContext.previewType = nil
@@ -141,14 +133,26 @@ class AVOutputClass: NSObject, AVCaptureFileOutputRecordingDelegate, AVCaptureVi
     }
 
     func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
-        let content = UNMutableNotificationContent()
-        content.title = "Recording Completed".local
-        content.body = String(format: "File saved to: %@".local, outputFileURL.path)
-        content.sound = UNNotificationSound.default
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-        let request = UNNotificationRequest(identifier: "quickrecorder.completed.\(UUID().uuidString)", content: content, trigger: trigger)
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error { print("Notification failed to send：\(error.localizedDescription)") }
+        DispatchQueue.main.async {
+            SCContext.captureSession?.stopRunning()
+            SCContext.previewSession?.stopRunning()
+            SCContext.streamType = nil
+            SCContext.startTime = nil
+            SCContext.timePassed = 0
+            SCContext.isStopping = false
+            controlPanel.orderOut(nil)
+            deviceWindow.orderOut(nil)
+            updateStatusBar()
+            let successfullyFinished = (error as NSError?)?.userInfo[AVErrorRecordingSuccessfullyFinishedKey] as? Bool ?? false
+            if let error, !successfullyFinished {
+                SCContext.showNotification(title: "Failed to save file".local, body: error.localizedDescription, id: "luma.error.\(UUID().uuidString)")
+            } else {
+                SCContext.showNotification(title: "Recording Completed".local,
+                    body: String(format: "File saved to: %@".local, outputFileURL.path), id: "luma.completed.\(UUID().uuidString)")
+            }
+            let completion = SCContext.onRecordingFinished
+            SCContext.onRecordingFinished = nil
+            completion?()
         }
     }
 }

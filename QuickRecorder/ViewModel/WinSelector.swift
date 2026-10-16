@@ -110,8 +110,8 @@ struct WinSelector: View {
                                                         .padding(.vertical, 5)
                                                         .background(
                                                             Rectangle()
-                                                                .foregroundStyle(.blue)
-                                                                .cornerRadius(5)
+                                                                .fill(Color.clear)
+                                                                .qrGlassBackground(tint: .blue, cornerRadius: 5)
                                                                 .opacity(selected.contains(item.window) ? 0.2 : 0.0001)
                                                         )
                                                         Text(item.window.title!)

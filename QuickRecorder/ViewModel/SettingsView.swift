@@ -15,27 +15,55 @@ struct SettingsView: View {
     @State private var selectedItem: String? = "General"
     
     var body: some View {
-        NavigationView {
-            List(selection: $selectedItem) {
-                NavigationLink(destination: GeneralView(), tag: "General", selection: $selectedItem) {
-                    Label("General", image: "gear")
+        if #available(macOS 26, *) {
+            NavigationSplitView {
+                List(selection: $selectedItem) {
+                    Label("General", image: "gear").tag("General")
+                    Label("Recorder", image: "record").tag("Recorder")
+                    Label("Output", image: "film").tag("Output")
+                    Label("Hotkey", image: "hotkey").tag("Hotkey")
+                    Label("Blocklist", image: "blacklist").tag("Blocklist")
                 }
-                NavigationLink(destination: RecorderView(), tag: "Recorder", selection: $selectedItem) {
-                    Label("Recorder", image: "record")
+                .listStyle(.sidebar)
+                .padding(.top, 9)
+            } detail: {
+                // Spec §4.3.6: soften the scroll-edge effect on the detail content (macOS 26+).
+                Group {
+                    switch selectedItem {
+                    case "General": GeneralView()
+                    case "Recorder": RecorderView()
+                    case "Output": OutputView()
+                    case "Hotkey": HotkeyView()
+                    case "Blocklist": BlocklistView()
+                    default: GeneralView()
+                    }
                 }
-                NavigationLink(destination: OutputView(), tag: "Output", selection: $selectedItem) {
-                    Label("Output", image: "film")
-                }
-                NavigationLink(destination: HotkeyView(), tag: "Hotkey", selection: $selectedItem) {
-                    Label("Hotkey", image: "hotkey")
-                }
-                NavigationLink(destination: BlocklistView(), tag: "Blaoklist", selection: $selectedItem) {
-                    Label("Blocklist", image: "blacklist")
-                }
+                .scrollEdgeEffectStyle(.soft, for: .vertical)
             }
-            .listStyle(.sidebar)
-            .padding(.top, 9)
-        }.frame(width: 600, height: 512)
+            .frame(width: 600, height: 512)
+        } else {
+            NavigationView {
+                List(selection: $selectedItem) {
+                    NavigationLink(destination: GeneralView(), tag: "General", selection: $selectedItem) {
+                        Label("General", image: "gear")
+                    }
+                    NavigationLink(destination: RecorderView(), tag: "Recorder", selection: $selectedItem) {
+                        Label("Recorder", image: "record")
+                    }
+                    NavigationLink(destination: OutputView(), tag: "Output", selection: $selectedItem) {
+                        Label("Output", image: "film")
+                    }
+                    NavigationLink(destination: HotkeyView(), tag: "Hotkey", selection: $selectedItem) {
+                        Label("Hotkey", image: "hotkey")
+                    }
+                    NavigationLink(destination: BlocklistView(), tag: "Blaoklist", selection: $selectedItem) {
+                        Label("Blocklist", image: "blacklist")
+                    }
+                }
+                .listStyle(.sidebar)
+                .padding(.top, 9)
+            }.frame(width: 600, height: 512)
+        }
     }
 }
 
@@ -65,20 +93,58 @@ struct GeneralView: View {
                         }
                     SDivider()
                 }
-                SToggle("Show QuickRecorder on Dock", isOn: $showOnDock)
+                SToggle("Show Luma on Dock", isOn: $showOnDock)
                     //.disabled(!showMenubar)
                 SDivider()
-                SToggle("Show QuickRecorder on Menu Bar", isOn: $showMenubar)
+                SToggle("Show Luma on Menu Bar", isOn: $showMenubar)
                     //.disabled(!showOnDock)
             }
             SGroupBox(label: "Update") { UpdaterSettingsView(updater: updaterController.updater) }
             VStack(spacing: 8) {
                 CheckForUpdatesView(updater: updaterController.updater)
                 if let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
-                    Text("QuickRecorder v\(appVersion)")
+                    Text("Luma v\(appVersion)")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
+            }
+            SGroupBox(label: "About") {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Luma · AGPL-3.0")
+                        .font(.headline)
+                    HStack(spacing: 4) {
+                        Text("Based on")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Button(action: {
+                            NSWorkspace.shared.open(URL(string: "https://github.com/lihaoyun6/QuickRecorder")!)
+                        }) {
+                            Text("lihaoyun6/QuickRecorder")
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    HStack(spacing: 4) {
+                        Text("This fork")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Button(action: {
+                            NSWorkspace.shared.open(URL(string: "https://github.com/liudicy/Luma")!)
+                        }) {
+                            Text("liudicy/Luma")
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    if !forkVersionString.isEmpty {
+                        Text(forkVersionString)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .padding(.vertical, 4)
             }
         }
         .onAppear{ if #available(macOS 13, *) { launchAtLogin = (SMAppService.mainApp.status == .enabled) }}
@@ -91,6 +157,15 @@ struct GeneralView: View {
                 NSApp.setActivationPolicy(.regular)
             }
         }
+    }
+    
+    private var forkVersionString: String {
+        let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
+        if short.isEmpty {
+            return build.isEmpty ? "" : "Build \(build)"
+        }
+        return build.isEmpty ? "Version \(short)" : "Version \(short) (\(build))"
     }
 }
 
@@ -139,7 +214,7 @@ struct RecorderView: View {
                 SToggle("Open video trimmer after recording", isOn: $trimAfterRecord)
             }
             SGroupBox {
-                SToggle("Exclude QuickRecorder itself", isOn: $hideSelf)
+                SToggle("Exclude Luma itself", isOn: $hideSelf)
                 SDivider()
                 if #available (macOS 13, *) {
                     SToggle("Include Menu Bar in Recording", isOn: $includeMenuBar)

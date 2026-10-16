@@ -27,14 +27,14 @@
 			<key>CFBundleTypeIconFile</key>
 			<string>qmaIcon</string>
 			<key>CFBundleTypeName</key>
-			<string>QuickRecorder Multi-Track Audio</string>
+			<string>Luma Multi-Track Audio</string>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>LSHandlerRank</key>
 			<string>Owner</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>com.lihaoyun6.QuickRecorder.qma</string>
+				<string>com.liudicy.QuickRecorder.qma</string>
 			</array>
 			<key>LSTypeIsPackage</key>
 			<true/>
@@ -45,9 +45,9 @@
 	<key>OSAScriptingDefinition</key>
 	<string>Scriptable</string>
 	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/lihaoyun6/QuickRecorder/main/appcast.xml</string>
+	<string>https://raw.githubusercontent.com/liudicy/Luma/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string>dP6zY7RAyK3DtV/dDrQ2V2dB0BY36jADwMKHZIX89u4=</string>
+	<string>OuhGb6zG1v3E96t4cXiJImGwsGq36q3/ggiMMAVtq8k=</string>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
@@ -56,14 +56,14 @@
 				<string>com.apple.package</string>
 			</array>
 			<key>UTTypeDescription</key>
-			<string>QuickRecorder Multi-Track Audio</string>
+			<string>Luma Multi-Track Audio</string>
 			<key>UTTypeIcons</key>
 			<dict>
 				<key>UTTypeIconBadgeName</key>
 				<string>qmaIcon</string>
 			</dict>
 			<key>UTTypeIdentifier</key>
-			<string>com.lihaoyun6.QuickRecorder.qma</string>
+			<string>com.liudicy.QuickRecorder.qma</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>

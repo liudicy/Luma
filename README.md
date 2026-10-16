@@ -1,59 +1,78 @@
-#
 <p align="center">
-<img src="./QuickRecorder/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="200" height="200" />
-<h1 align="center">QuickRecorder</h1>
-<h3 align="center">A lightweight and high-performance screen recorder for macOS<br><a href="./README_zh.md">[中文版本]</a><br><a href="https://lihaoyun6.github.io/quickrecorder/">[Landing Page]</a>
+  <img src="img/luma-icon.png" width="112" alt="Luma app icon">
 </p>
+<h1 align="center">Luma</h1>
+<p align="center">A simple, native screen recorder for macOS.</p>
+<p align="center"><a href="README_zh.md">简体中文</a> · <a href="https://github.com/liudicy/Luma/releases">Releases</a> · <a href="https://github.com/liudicy/Luma/issues">Report an issue</a></p>
 
-## Screenshot
-<p align="center">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./img/preview_en_dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="./img/preview_en.png">
-  <img alt="QuickRecorder Screenshots" src="./img/preview_en.png" width="840"/>
-</picture>
-</p>
+Record a screen, a window, an application or just the area you need. Luma brings recording sources into one small panel, with system audio, an optional microphone and controls in the menu bar.
 
-## Installation and Usage
-### System Requirements:
-- macOS 12.3 and Later
+## A small panel. Everything you need.
 
-### Install:
-Download the latest installation file [here](../../releases/latest) or install via Homebrew:
+<p align="center"><img src="img/screenshots/launcher-zh.png" width="1000" alt="Luma recording launcher"></p>
 
-```bash
-brew install lihaoyun6/tap/quickrecorder
+- **Choose your source:** display, area, window, application, system audio or supported mobile device.
+- **Capture sound:** system audio without a virtual audio driver, optional microphone input and separate audio tracks.
+- **Stay in control:** native menu bar pause/resume/stop, a floating controller, keyboard shortcuts and timed recording.
+- **Make it yours:** H.264 or HEVC, quality and frame-rate settings, camera overlays, mouse highlighting and magnification.
+- **Finish quickly:** recording preview, video trimming and a configurable output folder.
+- **Feel at home:** Liquid Glass on macOS 26+, with material backgrounds on earlier versions.
+
+## Inside Luma
+
+| Recording options | Recording controls |
+| :---: | :---: |
+| <img src="img/screenshots/recording-settings-zh.png" width="520" alt="Luma recording settings"> | <img src="img/screenshots/recording-menu-zh.png" width="240" alt="Luma native recording menu while paused"> |
+
+Actual screenshots from Luma 1.7.1 on macOS 27.0.1, using the Chinese interface.
+
+This version repairs permission handling, replaces hover-dependent menu bar controls with a native menu, corrects pause timing across audio and video, and waits for recording files to finish saving. The H.265 onboarding tip remembers your choice. See [verification notes](docs/verification.md) for the configurations tested and the remaining acceptance checks.
+
+## Start recording
+
+1. Open **Luma** and choose a source.
+2. Allow **Screen & System Audio Recording** in System Settings when requested. Microphone and camera access are needed only when you use those features.
+3. Choose the target and start. Click the recording icon and timer in the menu bar to pause, resume or stop. Choose **Show Recording Controls** for a floating controller.
+4. Find the file in your chosen output folder. The default is Desktop.
+
+### Installation
+
+The current source version is **1.7.1**. Packaged downloads, when available, are listed under [Releases](https://github.com/liudicy/Luma/releases). Check the release name and notes: older QuickRecorder packages do not contain this Luma version. You can also build the signed app from source below.
+
+The minimum deployment target is **macOS 12.3**. System audio requires macOS 13+, Presenter Overlay requires macOS 14+, and Liquid Glass requires macOS 26+. Build with **Xcode 26 or later**. Older systems, Intel hardware and external recording devices need additional runtime coverage; the deployment target alone is not a compatibility guarantee.
+
+### Screen permission is enabled, but capture is denied
+
+Use one installed copy in a stable location, preferably `/Applications/Luma.app`. Enable Luma under **System Settings → Privacy & Security → Screen & System Audio Recording**, then quit and reopen the app if macOS requires it.
+
+Local builds should use a consistent Apple signing identity. Switching between signed and unsigned copies can invalidate the stored authorization while leaving its settings toggle enabled. Luma does not automatically retry a denied request or force-quit after denial.
+
+## Build from source
+
+```sh
+git clone https://github.com/liudicy/Luma.git
+cd Luma
+./Scripts/build_and_check_signing.sh
+open build/signed-DerivedData/Build/Products/Release/Luma.app
 ```
 
-### Features/Usage:
-- You can use QuickRecorder to record your screens / windows / applications / mobile devices... etc.
+The helper checks public certificates against code-signing trust and online OCSP revocation status before building a signed Release app. It does not execute certificate-test binaries. In Xcode, select your own team under **Signing & Capabilities**. It does not create certificates or notarize a distribution build. `--reset-tcc` explicitly resets screen permission; `--prove` runs an interactive rebuild check.
 
-- QuickRecorder supports driver-free audio loopback recording, mouse highlighting, screen magnifier and many more useful features.  
-- The new **"[Presenter Overlay](https://support.apple.com/guide/facetime/presenter-overlay-video-conferencing-fctm6333f4bd/mac)"** in macOS 14 was fully supported by QuickRecorder, which can overlay the camera in real time on your recording *(macOS 12/13 can only use camera floating window)*  
-- QuickRecorder is able to record `HEVC with Alpha` video format, that can contain alpha channel in the output file *(currently only iMovie and FCPX support this feature)*  
+The Xcode project/target remain `QuickRecorder`, and the bundle ID remains `com.liudicy.QuickRecorder` to preserve this fork's settings and authorization identity. The app's product name is **Luma**. Swift Package Manager resolves the pinned dependencies in `Package.resolved`.
 
-## Q&A
-**1. Where can I reopen the main panel after closing it?**
-> Click the Dock tile or Menubar icon of QuickRecorder to reopen the main panel at any time.
+```sh
+# Run the pause/audio-video timeline regression checks.
+./Scripts/test_recording_timeline.sh
+# Regenerate every app-icon size from the vector drawing source.
+swift Scripts/generate_icon.swift
+```
 
-**2. Why does QuickRecorder not a sandbox app?**
-> QuickRecorder has no plans to be uploaded to the App Store, so it does not need to be designed as a sandbox app.  
+## Contribute
 
-**3. How to independently control the volume of system sound and sound from microphone in other video editor?**
-> QuickRecorder will merge the audio input from the microphone to the main audio track after recording by default. If you need to edit the video, you can turn off the `Record Microphone to Main Track` option in the settings panel. After turning off, the system sound and sound from microphone will be recorded into two audio tracks and can be edited independently.  
+[Open an issue](https://github.com/liudicy/Luma/issues) with the app/macOS versions, installation or signing method, recording mode, audio settings and steps to reproduce. Note whether the issue follows pause/resume or a permission change. Please keep private screen content out of reports.
 
-## Donate
-<img src="./img/donate.png" width="350"/>
+## Open-source notice
 
-## Thanks
-[Azayaka](https://github.com/Mnpn/Azayaka) @Mnpn
-> The source of inspiration and part of the code of the screen recording engine comes from the Azayaka project, and I am also one of the code contributors to this project
+Luma is an independently maintained fork of [QuickRecorder](https://github.com/lihaoyun6/QuickRecorder) by [lihaoyun6](https://github.com/lihaoyun6) and its contributors. It continues under **GNU AGPL version 3**. The original [LICENSE](LICENSE) and source copyright notices are preserved; Luma's modifications and new icon use the same license.
 
-[KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) @sindresorhus  
-> QuickRecorder uses this swift library to handle shortcut key events  
-
-[SwiftLAME](https://github.com/hidden-spectrum/SwiftLAME) @Hidden Spectrum
-> QuickRecorder uses this swift library to handle MP3 output
-
-[ChatGPT](https://chat.openai.com) @OpenAI
-> Note: Part of the code in this project was generated or refactored using ChatGPT.
+[NOTICE](NOTICE) records the project provenance, including Azayaka-derived recording code. [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt) contains dependency licenses and copyright notices. All three files are included in the app bundle. This project is maintained at [liudicy/Luma](https://github.com/liudicy/Luma).

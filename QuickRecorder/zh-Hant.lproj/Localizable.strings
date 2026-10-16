@@ -43,7 +43,7 @@
 "Low" = "低畫質";
 "Medium" = "中畫質";
 "High" = "高畫質";
-"Save Current Frame" = "儲存當前幀快照";
+"Save Current Frame" = "儲存目前畫面";
 "Record Cursor" = "錄製滑鼠游標";
 "System Audio" = "錄製系統聲音";
 "App's Audio" = "錄製App聲音";
@@ -65,7 +65,7 @@
 "Audio" = "音訊設定";
 "Video" = "影片設定";
 "Save" = "儲存位置";
-"Exclude QuickRecorder itself" = "排除QuickRecorder視窗";
+"Exclude Luma itself" = "排除Luma視窗";
 "Highlight the Mouse Cursor" = "高亮顯示滑鼠游標";
 "Not available for \"Single Window Capture\"" = "此功能在錄製單個視窗時不可用";
 "Normal - 128Kbps" = "標準 - 128Kbps";
@@ -105,7 +105,7 @@
 "Launch at Login" = "登入時啟動";
 "Shortcuts Settings" = "快速鍵設定";
 "Pause / Resume" = "暫停/繼續錄製";
-"Stop Recording" = "結束螢幕錄製";
+"Stop Recording" = "停止錄製";
 "Record System Audio" = "立即錄製系統聲音";
 "Record Current Screen" = "立即錄製當前螢幕";
 "Record Topmost Window" = "立即錄製當前視窗";
@@ -135,8 +135,8 @@
 "Automatically check for updates" = "自動檢查程式更新";
 "Automatically download updates" = "自動下載程式更新";
 "Connect your device via USB" = "請用 USB 傳輸線連接裝置";
-"Show QuickRecorder on Dock" = "在 Dock 中顯示 QuickRecorder";
-"Show QuickRecorder on Menu Bar" = "在選單列中顯示 QuickRecorder";
+"Show Luma on Dock" = "在 Dock 中顯示 Luma";
+"Show Luma on Menu Bar" = "在選單列中顯示 Luma";
 "Icon Settings" = "圖示設定";
 "Still Processing" = "仍在處理";
 "Mixing audio track..." = "正在混合音軌...";
@@ -225,3 +225,32 @@
 "audio file writing issue" = "音频文件写入出错";
 "closing stream with error:\n" = "关闭流时发生错误:\n";
 "\nthis might be due to the window closing or the user stopping from the sonoma ui" = "\n这可能是有由于用户关闭了正在录制中的窗口, 或使用窗口上的附加按钮停止了录制.";
+
+// Fork: About section (spec §4.1.5)
+"About" = "關於";
+"QuickRecorder Fork" = "QuickRecorder 分支版本";
+"Based on" = "基於";
+"This fork" = "本分支";
+
+// Fork: first-launch migration notice (spec §4.1.4)
+"Fork Migration Notice" = "分支移轉提示";
+"This build of QuickRecorder is a community fork with a new bundle ID, so macOS treats it as a separate app. Screen Recording permission must be granted again in System Settings (Privacy & Security > Screen Recording), and settings or shortcuts from the original QuickRecorder were not carried over." = "本版本 QuickRecorder 是更換了 Bundle ID 的社群分支, macOS 會將其視為另一個獨立的應用. 需要前往「系統設定 > 隱私與安全性 > 螢幕錄製」重新授予螢幕錄製權限, 原版 QuickRecorder 的設定與快捷鍵也不會被繼承.";
+"Open Screen Recording Settings" = "開啟螢幕錄製設定";
+
+"Recording controls" = "錄製控制";
+
+"Pause Recording" = "暫停錄製";
+
+"Resume Recording" = "繼續錄製";
+
+"Saving…" = "正在儲存…";
+
+"Camera…" = "攝影機…";
+
+"Open Luma" = "開啟 Luma";
+
+"Settings…" = "設定…";
+
+"Quit Luma" = "結束 Luma";
+
+"Show Recording Controls" = "顯示錄製控制器";

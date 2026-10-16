@@ -23,9 +23,8 @@ struct PreviewView: View {
         ZStack(alignment: Alignment(horizontal: .leading, vertical: .top)) {
             ZStack {
                 Color.clear
-                    .background(.ultraThickMaterial)
+                    .qrGlassBackground(cornerRadius: 6, fallbackMaterial: .ultraThickMaterial)
                     .environment(\.controlActiveState, .active)
-                    .cornerRadius(6)
                 ZStack {
                     Image(nsImage: frame)
                         .resizable().scaledToFit()

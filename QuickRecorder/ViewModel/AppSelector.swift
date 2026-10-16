@@ -60,8 +60,8 @@ struct AppSelector: View {
                                                         .padding(10)
                                                         .background(
                                                             Rectangle()
-                                                                .foregroundStyle(.blue)
-                                                                .cornerRadius(5)
+                                                                .fill(Color.clear)
+                                                                .qrGlassBackground(tint: .blue, cornerRadius: 5)
                                                                 .opacity(selected.contains(item) ? 0.2 : 0.0)
                                                         )
                                                         Image(systemName: "circle.fill")

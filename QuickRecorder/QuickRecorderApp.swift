@@ -19,7 +19,8 @@ import Sparkle
 let isMacOS12 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 12
 let isMacOS14 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 14
 let isMacOS15 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 15
-var scPerm = false
+let isMacOS26 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 26
+let isMacOS27 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27
 let fd = FileManager.default
 let ud = UserDefaults.standard
 var statusBarItem: NSStatusItem!
@@ -186,10 +187,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
         if let monitor = mouseMonitor { NSEvent.removeMonitor(monitor); mouseMonitor = nil }
     }
     
-    func applicationWillTerminate(_ aNotification: Notification) {
-        if SCContext.stream != nil { SCContext.stopRecording() }
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard SCContext.streamType != nil else { return .terminateNow }
+        SCContext.onRecordingFinished = { sender.reply(toApplicationShouldTerminate: true) }
+        if SCContext.streamType == .idevice { AVOutputClass.shared.stopRecording() }
+        else { SCContext.stopRecording() }
+        return .terminateLater
     }
-    
+
     func application(_ application: NSApplication, open urls: [URL]) {
         for url in urls {
             if SCContext.trimingList.contains(url) { continue }
@@ -199,9 +204,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
     }
     
     func applicationWillFinishLaunching(_ notification: Notification) {
-        scPerm = SCContext.updateAvailableContentSync() != nil
         
-        let process = NSWorkspace.shared.runningApplications.filter({ $0.bundleIdentifier == "com.lihaoyun6.QuickRecorder" })
+        let process = NSWorkspace.shared.runningApplications.filter({ $0.bundleIdentifier == "com.liudicy.QuickRecorder" })
         if process.count > 1 {
             DispatchQueue.main.async {
                 let button = createAlert(title: "QuickRecorder is Running".local, message: "Please do not run multiple instances!".local, button1: "Quit".local).runModal()
@@ -264,6 +268,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
         statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusBarItem.button?.image = NSImage()
 
+        RecordingStatusController.shared.install()
+
         mousePointer.title = "Mouse Pointer".local
         mousePointer.level = .screenSaver
         mousePointer.ignoresMouseEvents = true
@@ -315,7 +321,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
         }
         KeyboardShortcuts.onKeyDown(for: .saveFrame) { if SCContext.stream != nil { SCContext.saveFrame = true }}
         KeyboardShortcuts.onKeyDown(for: .screenMagnifier) { if SCContext.stream != nil { SCContext.isMagnifierEnabled.toggle() }}
-        KeyboardShortcuts.onKeyDown(for: .stop) { if SCContext.stream != nil { SCContext.stopRecording() }}
+        KeyboardShortcuts.onKeyDown(for: .stop) { if SCContext.streamType == .idevice { AVOutputClass.shared.stopRecording() } else if SCContext.stream != nil { SCContext.stopRecording() }}
         KeyboardShortcuts.onKeyDown(for: .pauseResume) { if SCContext.stream != nil { SCContext.pauseRecording() }}
         KeyboardShortcuts.onKeyDown(for: .startWithAudio) {[self] in
             if SCContext.streamType != nil { return }
@@ -330,16 +336,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
         KeyboardShortcuts.onKeyDown(for: .startWithArea) {[self] in
             if SCContext.stream != nil { return }
             closeAllWindow()
-            showAreaSelector(size: NSSize(width: 600, height: 450))
+            SCContext.updateAvailableContent { self.showAreaSelector(size: NSSize(width: 600, height: 450)) }
         }
         KeyboardShortcuts.onKeyDown(for: .startWithWindow) { [self] in
             if SCContext.stream != nil { return }
             closeAllWindow()
             let frontmostApp = NSWorkspace.shared.frontmostApplication
-            if let pid = frontmostApp?.processIdentifier {
-                guard let scWindow = SCContext.getWindows().first(where: { $0.owningApplication?.processID == pid && $0.title != "" && $0.isOnScreen }) else { return }
-                prepRecord(type: "window", screens: SCContext.getSCDisplayWithMouse(), windows: [scWindow], applications: nil, fastStart: true)
-                return
+            SCContext.updateAvailableContent { [self] in
+                if let pid = frontmostApp?.processIdentifier {
+                    guard let scWindow = SCContext.getWindows().first(where: { $0.owningApplication?.processID == pid && $0.title != "" && $0.isOnScreen }) else { return }
+                    prepRecord(type: "window", screens: SCContext.getSCDisplayWithMouse(), windows: [scWindow], applications: nil, fastStart: true)
+                    return
+                }
             }
         }
         updateStatusBar()
@@ -348,17 +356,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         closeAllWindow()
         if showOnDock { _ = applicationShouldHandleReopen(NSApp, hasVisibleWindows: true) }
-        tips("Would you like to use H.265 format for better video quality and smaller file size?",
-             id: "qr.switch-to-h265.note", buttonTitle: "Use H.265", switchButton: true) {
-            ud.setValue(Encoder.h265.rawValue, forKey: "encoder")
+        if encoder != .h265 {
+            tips("Would you like to use H.265 format for better video quality and smaller file size?",
+                 id: "qr.switch-to-h265.note", buttonTitle: "Use H.265", switchButton: true) {
+                ud.setValue(Encoder.h265.rawValue, forKey: "encoder")
+            }
         }
+        showForkMigrationNoticeIfNeeded()
     }
     
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if SCContext.stream == nil {
-            let w1 = NSApp.windows.filter({ !$0.title.contains("Item-0") && !$0.title.isEmpty && $0.isVisible })
-            let w2 = w1.filter({ !$0.title.contains(".qma") })
-            if (!w1.isEmpty && w2.isEmpty) || w1.isEmpty {
+        if SCContext.streamType == nil {
+            if let panel = NSApp.windows.first(where: { $0 is EscPanel && $0.title == "QuickRecorder".local }) {
+                panel.makeKeyAndOrderFront(self)
+                return false
+            }
+            do {
                 let offset = (!showOnDock && !showMenubar) ? 127 : 0
                 let width = isMacOS12 ? 800 : 928
                 let mainPanel = EscPanel(contentRect: NSRect(x: 0, y: 0, width: width + offset, height: 100), styleMask: [.fullSizeContentView, .nonactivatingPanel], backing: .buffered, defer: false)
@@ -388,7 +401,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
     func openSettingPanel() {
         NSApp.activate(ignoringOtherApps: true)
         if #available(macOS 14, *) {
-            NSApp.mainMenu?.items.first?.submenu?.item(at: 3)?.performAction()
+            NSApp.mainMenu?.items.first?.submenu?.items.first(where: { $0.keyEquivalent == "," })?.performAction()
         } else if #available(macOS 13, *) {
             NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
         } else {
@@ -416,7 +429,7 @@ func closeAllWindow(except: String = "") {
     for w in NSApp.windows.filter({
         $0.title != "Item-0" && $0.title != ""
         && !$0.title.lowercased().contains(".qma")
-        && !$0.title.contains(except) }) { w.close() }
+        && (except.isEmpty || !$0.title.contains(except)) }) { w.close() }
 }
 
 func findNSSplitVIew(view: NSView?) -> NSSplitView? {
@@ -429,18 +442,6 @@ func findNSSplitVIew(view: NSView?) -> NSSplitView? {
         for subview in current.subviews { queue.append(subview) }
     }
     return nil
-}
-
-func getStatusBarWidth() -> CGFloat {
-    @AppStorage("miniStatusBar") var miniStatusBar: Bool = false
-    var width = 158.0
-    switch SCContext.streamType {
-    case nil: width = miniStatusBar ? 36.0 : 36.0
-    case .idevice: width = miniStatusBar ? 68.0 : 138.0
-    case .systemaudio: width = miniStatusBar ? 68.0 : 114.0
-    default: width = miniStatusBar ? 78.0 : 158.0
-    }
-    return width
 }
 
 func process(path: String, arguments: [String]) -> String? {
@@ -472,13 +473,36 @@ func process(path: String, arguments: [String]) -> String? {
     return output.trimmingCharacters(in: .newlines)
 }
 
+// Spec §4.1.4: this fork changed the bundle ID to com.liudicy.QuickRecorder, so macOS treats it
+// as a different app — screen-recording permission must be granted again and the legacy app's
+// preferences are not carried over. Called from applicationDidFinishLaunching after the existing
+// tips(), so first-run alerts appear one after another instead of nested. The app is not
+// sandboxed, so a legacy install's preferences sit directly in ~/Library/Preferences.
+func showForkMigrationNoticeIfNeeded() {
+    guard !ud.bool(forKey: "forkMigrationNoticeShown") else { return }
+    let legacyPrefs = NSHomeDirectory() + "/Library/Preferences/com.lihaoyun6.QuickRecorder.plist"
+    var openSettings = false
+    if fd.fileExists(atPath: legacyPrefs) {
+        openSettings = createAlert(
+            title: "Fork Migration Notice",
+            message: "This build of QuickRecorder is a community fork with a new bundle ID, so macOS treats it as a separate app. Screen Recording permission must be granted again in System Settings (Privacy & Security > Screen Recording), and settings or shortcuts from the original QuickRecorder were not carried over.",
+            button1: "Open Screen Recording Settings",
+            button2: "OK"
+        ).runModal() == .alertFirstButtonReturn
+    }
+    ud.set(true, forKey: "forkMigrationNoticeShown")
+    if openSettings, let settingsURL = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+        NSWorkspace.shared.open(settingsURL)
+    }
+}
+
 func tips(_ message: String, title: String? = nil, id: String, buttonTitle: String = "OK", switchButton: Bool = false, width: Int? = nil, action: (() -> Void)? = nil) {
     let never = (ud.object(forKey: "neverRemindMe") as? [String]) ?? []
     if !never.contains(id) {
         if switchButton {
             let alert = createAlert(title: title ?? Bundle.main.appName + " Tips".local, message: message, button1: buttonTitle, button2: "Don't remind me again", width: width).runModal()
             if alert == .alertSecondButtonReturn { ud.setValue(never + [id], forKey: "neverRemindMe") }
-            if alert == .alertFirstButtonReturn { action?() }
+            if alert == .alertFirstButtonReturn { ud.setValue(never + [id], forKey: "neverRemindMe"); action?() }
         } else {
             let alert = createAlert(title: title ?? Bundle.main.appName + " Tips".local, message: message, button1: "Don't remind me again", button2: buttonTitle, width: width).runModal()
             if alert == .alertFirstButtonReturn { ud.setValue(never + [id], forKey: "neverRemindMe") }
@@ -502,8 +526,11 @@ func createAlert(level: NSAlert.Style = .warning, title: String, message: String
 
 func showAlertSyncOnMainThread(level: NSAlert.Style = .warning, title: String, message: String, button1: String, button2: String = "", width: Int? = nil) -> NSApplication.ModalResponse {
     var response: NSApplication.ModalResponse = .abort
+    if Thread.isMainThread {
+        return createAlert(level: level, title: title, message: message, button1: button1, button2: button2, width: width).runModal()
+    }
     let semaphore = DispatchSemaphore(value: 0)
-    
+
     DispatchQueue.main.async {
         let alert = createAlert(level: level, title: title, message: message, button1: button1, button2: button2, width: width)
         response = alert.runModal()
@@ -524,7 +551,7 @@ extension Bundle {
 }
 
 extension String {
-    var local: String { return NSLocalizedString(self, comment: "") }
+    var local: String { return NSLocalizedString(self, comment: "").replacingOccurrences(of: "QuickRecorder", with: "Luma") }
     var deletingPathExtension: String {
         return (self as NSString).deletingPathExtension
     }
@@ -548,7 +575,7 @@ extension NSMenuItem {
 
 extension NSImage {
     static func createScreenShot() -> NSImage? {
-        let excludedAppBundleIDs = ["com.lihaoyun6.QuickRecorder"]
+        let excludedAppBundleIDs = ["com.liudicy.QuickRecorder"]
         var exclusionPIDs = [Int]()
         for app in NSWorkspace.shared.runningApplications {
             if excludedAppBundleIDs.contains(app.bundleIdentifier ?? "") {

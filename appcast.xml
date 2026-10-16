@@ -2,6 +2,44 @@
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
         <title>QuickRecorder</title>
+        <!--
+            MAINTAINER TODO BEFORE PUBLISHING THIS ITEM:
+            1. Create the GitHub release "1.7.0" at https://github.com/liudicy/Luma
+               and upload the final DMG asset; the enclosure url below must point at that
+               real uploaded asset (and the length attribute should be set to its byte size).
+            2. Replace the sparkle:edSignature value "PENDING-MAINTAINER-SIGNING" with the
+               output of ./Scripts/sign_update.sh <the exact DMG you uploaded>.
+               Run ./Scripts/generate_sparkle_keys.sh once first if the fork keypair does not
+               exist yet; it also writes SUPublicEDKey into QuickRecorder/Info.plist.
+            3. Note that builds carrying upstream's SUPublicEDKey cannot validate updates
+               signed with the fork key, and vice versa. Users coming from the original
+               QuickRecorder must install this fork manually once; from then on Sparkle
+               updates validate against the key embedded in the fork build.
+            4. The DMG must be built with a valid signing certificate
+               (./Scripts/build_and_check_signing.sh). An ad-hoc-signed build keeps losing the
+               Screen Recording grant on every rebuild.
+        -->
+        <item>
+            <title>v1.7.0</title>
+            <pubDate>Thu, 15 Oct 2026 21:19:34 +0800</pubDate>
+            <sparkle:version>170</sparkle:version>
+            <sparkle:shortVersionString>1.7.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>12.3</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <style>ul{margin-top: 0;margin-bottom: 7;padding-left: 18;}</style><ul>
+                <li>适配 macOS 26/27 的 Liquid Glass 视觉效果(设置 > 外观中的透明度滑块会自动生效).</li>
+                <li>修复了 macOS 27 菜单栏录制控制按钮(onHover/occlusionState 系统 Bug)无法点击的问题.</li>
+                <li>使用 Xcode 27 SDK 构建, 已完成 ScreenCaptureKit 废弃 API 审计(未发现废弃用法).</li>
+                <li>本版本为 liudicy 维护的 fork 分发版, Bundle ID 为 com.liudicy.QuickRecorder.</li>
+                </ul><ul>
+                <li>Adopted the macOS 26/27 Liquid Glass appearance across the UI (system transparency slider applies automatically).</li>
+                <li>Fixed: menu bar record/pause/stop controls not responding on macOS 27 (worked around system onHover/occlusionState regressions).</li>
+                <li>Built with the Xcode 27 SDK; the ScreenCaptureKit deprecation audit found no deprecated API usage.</li>
+                <li>This release is distributed from the liudicy fork (bundle id com.liudicy.QuickRecorder).</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/liudicy/Luma/releases/download/1.7.0/QuickRecorder_v1.7.0.dmg" type="application/octet-stream" sparkle:edSignature="PENDING-MAINTAINER-SIGNING"/>
+        </item>
         <item>
             <title>v1.6.9</title>
             <pubDate>Wed, 11 Jun 2025 15:37:19 +0800</pubDate>
