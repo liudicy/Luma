@@ -50,10 +50,12 @@ struct ContentView: View {
                     if #available(macOS 13, *) {
                         ZStack(alignment: Alignment(horizontal: .center, vertical: .bottom)) {
                             Button(action: {
-                                if let display = SCContext.getSCDisplayWithMouse() {
-                                    closeMainWindow()
-                                    appDelegate.createCountdownPanel(screen: display) {
-                                        AppDelegate.shared.prepRecord(type: "audio", screens: SCContext.getSCDisplayWithMouse(), windows: nil, applications: nil)
+                                SCContext.updateAvailableContent {
+                                    if let display = SCContext.getSCDisplayWithMouse() {
+                                        closeMainWindow()
+                                        appDelegate.createCountdownPanel(screen: display) {
+                                            AppDelegate.shared.prepRecord(type: "audio", screens: SCContext.getSCDisplayWithMouse(), windows: nil, applications: nil)
+                                        }
                                     }
                                 }
                             }, label: {

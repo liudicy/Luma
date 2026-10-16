@@ -93,24 +93,24 @@ struct GeneralView: View {
                         }
                     SDivider()
                 }
-                SToggle("Show QuickRecorder on Dock", isOn: $showOnDock)
+                SToggle("Show Luma on Dock", isOn: $showOnDock)
                     //.disabled(!showMenubar)
                 SDivider()
-                SToggle("Show QuickRecorder on Menu Bar", isOn: $showMenubar)
+                SToggle("Show Luma on Menu Bar", isOn: $showMenubar)
                     //.disabled(!showOnDock)
             }
             SGroupBox(label: "Update") { UpdaterSettingsView(updater: updaterController.updater) }
             VStack(spacing: 8) {
                 CheckForUpdatesView(updater: updaterController.updater)
                 if let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
-                    Text("QuickRecorder v\(appVersion)")
+                    Text("Luma v\(appVersion)")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
             }
             SGroupBox(label: "About") {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("QuickRecorder Fork")
+                    Text("Luma · AGPL-3.0")
                         .font(.headline)
                     HStack(spacing: 4) {
                         Text("Based on")
@@ -214,7 +214,7 @@ struct RecorderView: View {
                 SToggle("Open video trimmer after recording", isOn: $trimAfterRecord)
             }
             SGroupBox {
-                SToggle("Exclude QuickRecorder itself", isOn: $hideSelf)
+                SToggle("Exclude Luma itself", isOn: $hideSelf)
                 SDivider()
                 if #available (macOS 13, *) {
                     SToggle("Include Menu Bar in Recording", isOn: $includeMenuBar)

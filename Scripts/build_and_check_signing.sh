@@ -29,7 +29,35 @@ for arg in "$@"; do
 	esac
 done
 
-IDENT=$(security find-identity -v -p codesigning | awk -F'"' '/Apple (Development|Distribution)/{print $2; exit}')
+# A revoked certificate still passes codesign but gets its processes SIGKILLed by AMFI,
+# and `security find-identity` lists revoked certificates first, so probe every identity
+# and keep the first one whose binaries actually execute on this Mac.
+# The id in the certificate's common name is NOT the team id. DEVELOPMENT_TEAM must
+# equal the certificate's OU, which codesign reports as TeamIdentifier.
+TEMPLATE=$(mktemp -d)
+trap 'rm -rf "$TEMPLATE"' EXIT
+printf 'int main(){return 0;}\n' > "$TEMPLATE/m.c"
+xcrun clang -o "$TEMPLATE/m" "$TEMPLATE/m.c"
+
+# Fingerprints, not names: names contain spaces and would word-split.
+# `security find-identity` prints "  1) <SHA-1> "<name>"".
+CANDIDATES=$(security find-identity -v -p codesigning \
+	| awk '$1 ~ /^[0-9]+\)$/ && /Apple (Development|Distribution)/ {print $2}')
+IDENT=""
+TEAM=""
+for candidate in $CANDIDATES; do
+	# Every candidate needs a pristine file: AMFI caches the failed verdict on the vnode, so
+	# re-signing a file that was already killed stays killed even with a good certificate.
+	cp "$TEMPLATE/m" "$TEMPLATE/probe.$candidate"
+	if codesign --force --sign "$candidate" "$TEMPLATE/probe.$candidate" 2>/dev/null \
+		&& "$TEMPLATE/probe.$candidate" 2>/dev/null; then
+		IDENT=$candidate
+		TEAM=$(codesign -dvvv "$TEMPLATE/probe.$candidate" 2>&1 | sed -n 's/^TeamIdentifier=//p')
+		break
+	fi
+	echo "skipping unusable certificate $candidate (revoked or expired: AMFI kills what it signs)" >&2
+done
+
 if [ -z "$IDENT" ]; then
 	cat >&2 <<EOF
 No usable codesigning identity in the keychain.
@@ -38,40 +66,24 @@ Xcode > Settings > Accounts > <your Apple ID> > Manage Certificates > + > Apple 
 EOF
 	exit 1
 fi
-echo "identity: $IDENT"
-
-# A revoked certificate still passes codesign but gets its processes SIGKILLed by AMFI,
-# so probe behaviour instead of trusting the certificate's stated validity dates.
-PROBE=$(mktemp -d)
-trap 'rm -rf "$PROBE"' EXIT
-printf 'int main(){return 0;}\n' > "$PROBE/m.c"
-xcrun clang -o "$PROBE/m" "$PROBE/m.c"
-codesign --force --sign "$IDENT" "$PROBE/m" 2>/dev/null
-if ! "$PROBE/m" 2>/dev/null; then
-	echo "certificate is not usable on this Mac (AMFI kills binaries signed with it)." >&2
-	echo "Apple revoked it: re-issue an Apple Development certificate in Xcode, then re-run." >&2
-	exit 1
-fi
-
-# The id in the certificate's common name is NOT the team id. DEVELOPMENT_TEAM must
-# equal the certificate's OU, which codesign reports as TeamIdentifier.
-TEAM=$(codesign -dvvv "$PROBE/m" 2>&1 | sed -n 's/^TeamIdentifier=//p')
 if [ -z "$TEAM" ] || [ "$TEAM" = "not set" ]; then
 	echo "could not read a Team ID from a binary signed with $IDENT" >&2
 	exit 1
 fi
+echo "identity: $IDENT"
 echo "certificate probe: binaries signed with it execute."
 echo "team id (DEVELOPMENT_TEAM): $TEAM"
 
 build() {
 	xcodebuild -scheme QuickRecorder -configuration Release \
 		-destination 'platform=macOS,arch=arm64' -derivedDataPath "$OUT" \
-		DEVELOPMENT_TEAM="$TEAM" build
+		DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_IDENTITY="$IDENT" CODE_SIGN_STYLE=Manual build
 }
 
 build
-APP="$OUT/Build/Products/Release/QuickRecorder.app"
+APP="$OUT/Build/Products/Release/Luma.app"
 codesign --verify --strict --verbose=1 "$APP"
+echo "Signed application: $APP"
 echo "--- product identity ---"
 codesign -dvvv "$APP" 2>&1 | grep -E '^(Identifier|CDHash|TeamIdentifier|Signature)='
 
@@ -95,7 +107,7 @@ if [ "$PROVE" = 1 ]; then
 	if [ "$OLD_HASH" = "$NEW_HASH" ]; then
 		echo "warning: cdhash did not change, so this run proves nothing"
 	fi
-	pkill -x QuickRecorder 2>/dev/null || true
+	pkill -x Luma 2>/dev/null || true
 	open "$APP"
 	printf "Press Enter once the app has been open for ~5 seconds... "
 	read _

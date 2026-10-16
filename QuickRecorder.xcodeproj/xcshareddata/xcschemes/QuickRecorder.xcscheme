@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "18D3BDE62BCE5DC1006CFFC0"
-               BuildableName = "QuickRecorder.app"
+               BuildableName = "Luma.app"
                BlueprintName = "QuickRecorder"
                ReferencedContainer = "container:QuickRecorder.xcodeproj">
             </BuildableReference>
@@ -44,7 +44,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "18D3BDE62BCE5DC1006CFFC0"
-            BuildableName = "QuickRecorder.app"
+            BuildableName = "Luma.app"
             BlueprintName = "QuickRecorder"
             ReferencedContainer = "container:QuickRecorder.xcodeproj">
          </BuildableReference>
@@ -61,7 +61,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "18D3BDE62BCE5DC1006CFFC0"
-            BuildableName = "QuickRecorder.app"
+            BuildableName = "Luma.app"
             BlueprintName = "QuickRecorder"
             ReferencedContainer = "container:QuickRecorder.xcodeproj">
          </BuildableReference>

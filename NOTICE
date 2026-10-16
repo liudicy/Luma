@@ -1,0 +1,18 @@
+Luma — community fork of QuickRecorder
+
+Upstream: https://github.com/lihaoyun6/QuickRecorder
+Original author: lihaoyun6, copyright 2024 and subsequent upstream contributors.
+Fork source: https://github.com/liudicy/QuickRecorder
+
+Luma preserves the upstream GNU Affero General Public License version 3
+in LICENSE, together with existing source-file copyright/author notices.
+Luma modifications and the redesigned icon artwork are provided under
+that same license. This is an independent community fork.
+
+2026-10-16 changes: asynchronous permission/content discovery, native menu
+bar controls, recording finalization and pause/audio timing repairs,
+Luma product branding and vector-drawn icon, rewritten documentation.
+
+Recording-engine inspiration and portions of code originate from
+Azayaka: https://github.com/Mnpn/Azayaka.
+Dependency license texts are collected in THIRD_PARTY_NOTICES.txt.

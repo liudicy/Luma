@@ -564,7 +564,7 @@ class AudioPlayerManager: ObservableObject {
         }
     }
     
-    func saveFile(_ url: URL, saveAsMP3: Bool = false) {
+    func saveFile(_ url: URL, saveAsMP3: Bool = false, completion: ((Result<URL, Error>) -> Void)? = nil) {
         var url = url
         if url.pathExtension == "mp3" { url = url.deletingPathExtension() }
         if url.pathExtension != self.fileFormat { url = url.appendingPathExtension(self.fileFormat) }
@@ -574,13 +574,13 @@ class AudioPlayerManager: ObservableObject {
         Thread.detachNewThread {
             DispatchQueue.main.async { self.exporting = true }
             do {
-                guard let audioFile1 = self.audioFile1, let audioFile2 = self.audioFile2 else { return }
+                guard let audioFile1 = self.audioFile1, let audioFile2 = self.audioFile2 else { throw CocoaError(.fileReadCorruptFile) }
                 self.playerNode1.scheduleFile(audioFile1, at: nil, completionHandler: nil)
                 self.playerNode2.scheduleFile(audioFile2, at: nil, completionHandler: nil)
                 
                 let audioSettings = SCContext.updateAudioSettings(format: self.fileEncoder)
                 let outputFormat = self.playerNode1.outputFormat(forBus: 0)
-                let outputFile = try AVAudioFile(forWriting: url, settings: audioSettings, commonFormat: .pcmFormatFloat32, interleaved: false)
+                var outputFile: AVAudioFile? = try AVAudioFile(forWriting: url, settings: audioSettings, commonFormat: .pcmFormatFloat32, interleaved: false)
                 self.engine.stop()
                 try self.engine.enableManualRenderingMode(.offline, format: outputFormat, maximumFrameCount: 4096)
                 try self.engine.start()
@@ -596,7 +596,7 @@ class AudioPlayerManager: ObservableObject {
                     let status = try self.engine.renderOffline(framesToRender, to: buffer)
                     switch status {
                     case .success:
-                        try outputFile.write(from: buffer)
+                        try outputFile?.write(from: buffer)
                     case .insufficientDataFromInputNode, .cannotDoInCurrentContext:
                         // Handle the cases where rendering cannot proceed
                         break
@@ -606,34 +606,34 @@ class AudioPlayerManager: ObservableObject {
                     }
                 }
                 
+                outputFile = nil // Flush the container before an MP3 encoder opens it.
                 self.engine.disableManualRenderingMode()
                 self.engine.stop()
                 self.setupAudioEngine()
                 
                 let title = "Recording Completed".local
-                var body = String(format: "File saved to: %@".local, url.path.removingPercentEncoding!)
+                let body = String(format: "File saved to: %@".local, url.path.removingPercentEncoding!)
                 let id = "quickrecorder.completed.\(UUID().uuidString)"
                 
                 if saveAsMP3 {
                     let oldURL = url
-                    let newURl = url.deletingLastPathComponent().appendingPathComponent(lastComp).deletingPathExtension().appendingPathExtension("mp3")
-                    body = String(format: "File saved to: %@".local, newURl.path.removingPercentEncoding!)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        Task {
-                            do {
-                                try await SCContext.m4a2mp3(inputUrl: oldURL, outputUrl: newURl)
-                                try? fd.removeItem(at: oldURL)
-                            } catch {
-                                SCContext.showNotification(title: "Failed to save file".local, body: "\(error.localizedDescription)", id: "quickrecorder.error.\(UUID().uuidString)")
-                                return
-                            }
-                        }
+                    let newURL = url.deletingLastPathComponent().appendingPathComponent(lastComp).deletingPathExtension().appendingPathExtension("mp3")
+                    Task {
+                        do {
+                            try await SCContext.m4a2mp3(inputUrl: oldURL, outputUrl: newURL)
+                            try? fd.removeItem(at: oldURL)
+                            SCContext.showNotification(title: title, body: String(format: "File saved to: %@".local, newURL.path), id: id)
+                            completion?(.success(newURL))
+                        } catch { completion?(.failure(error)) }
+                        DispatchQueue.main.async { self.exporting = false }
                     }
+                    return
                 }
-                
                 SCContext.showNotification(title: title, body: body, id: id)
+                completion?(.success(url))
             } catch {
-                SCContext.showNotification(title: "Failed to save file".local, body: "\(error.localizedDescription)", id: "quickrecorder.error.\(UUID().uuidString)")
+                SCContext.showNotification(title: "Failed to save file".local, body: error.localizedDescription, id: "luma.error.\(UUID().uuidString)")
+                completion?(.failure(error))
             }
             DispatchQueue.main.async { self.exporting = false }
         }
