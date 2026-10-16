@@ -2,7 +2,7 @@
 # Build QuickRecorder with a real signing identity and (optionally) prove that the
 # Screen Recording grant survives a rebuild.
 #
-#   ./Scripts/build_and_check_signing.sh                 # probe + signed build + report
+#   ./Scripts/build_and_check_signing.sh                 # certificate check + signed build + report
 #   ./Scripts/build_and_check_signing.sh --reset-tcc     # also clear the stale grant
 #   ./Scripts/build_and_check_signing.sh --prove         # full rebuild-survives-grant test
 #
@@ -29,33 +29,38 @@ for arg in "$@"; do
 	esac
 done
 
-# A revoked certificate still passes codesign but gets its processes SIGKILLed by AMFI,
-# and `security find-identity` lists revoked certificates first, so probe every identity
-# and keep the first one whose binaries actually execute on this Mac.
-# The id in the certificate's common name is NOT the team id. DEVELOPMENT_TEAM must
-# equal the certificate's OU, which codesign reports as TeamIdentifier.
-TEMPLATE=$(mktemp -d)
-trap 'rm -rf "$TEMPLATE"' EXIT
-printf 'int main(){return 0;}\n' > "$TEMPLATE/m.c"
-xcrun clang -o "$TEMPLATE/m" "$TEMPLATE/m.c"
+# Validate certificates without signing or running a test executable. Executing a
+# binary signed by a revoked identity triggers macOS's malware-blocked dialog.
+# find-identity can still list revoked identities under -v, so reject annotated
+# entries and independently verify the matching public certificate with OCSP.
+CERT_WORK=$(mktemp -d)
+trap 'rm -rf "$CERT_WORK"' EXIT
+security find-certificate -a -p > "$CERT_WORK/all.pem"
+awk -v folder="$CERT_WORK" '
+    /-----BEGIN CERTIFICATE-----/ { count++; file = folder "/cert-" count ".pem" }
+    file != "" { print > file }
+    /-----END CERTIFICATE-----/ { close(file); file = "" }
+' "$CERT_WORK/all.pem"
 
-# Fingerprints, not names: names contain spaces and would word-split.
-# `security find-identity` prints "  1) <SHA-1> "<name>"".
 CANDIDATES=$(security find-identity -v -p codesigning \
-	| awk '$1 ~ /^[0-9]+\)$/ && /Apple (Development|Distribution)/ {print $2}')
+    | awk '$1 ~ /^[0-9]+\)$/ && /Apple (Development|Distribution)/ && /"[[:space:]]*$/ {print $2}')
 IDENT=""
 TEAM=""
 for candidate in $CANDIDATES; do
-	# Every candidate needs a pristine file: AMFI caches the failed verdict on the vnode, so
-	# re-signing a file that was already killed stays killed even with a good certificate.
-	cp "$TEMPLATE/m" "$TEMPLATE/probe.$candidate"
-	if codesign --force --sign "$candidate" "$TEMPLATE/probe.$candidate" 2>/dev/null \
-		&& "$TEMPLATE/probe.$candidate" 2>/dev/null; then
-		IDENT=$candidate
-		TEAM=$(codesign -dvvv "$TEMPLATE/probe.$candidate" 2>&1 | sed -n 's/^TeamIdentifier=//p')
-		break
-	fi
-	echo "skipping unusable certificate $candidate (revoked or expired: AMFI kills what it signs)" >&2
+    for certificate in "$CERT_WORK"/cert-*.pem; do
+        [ -f "$certificate" ] || continue
+        fingerprint=$(/usr/bin/openssl x509 -in "$certificate" -noout -fingerprint -sha1 | sed 's/.*=//; s/://g')
+        [ "$fingerprint" = "$candidate" ] || continue
+        if security verify-cert -q -c "$certificate" -p codeSign -R ocsp -R require > "$CERT_WORK/verify.log" 2>&1; then
+            IDENT=$candidate
+            TEAM=$(/usr/bin/openssl x509 -in "$certificate" -noout -subject -nameopt sep_multiline \
+                | sed -n 's/^[[:space:]]*OU[[:space:]]*=[[:space:]]*//p')
+        else
+            echo "skipping certificate that failed trust/revocation validation: $candidate" >&2
+        fi
+        break
+    done
+    [ -z "$IDENT" ] || break
 done
 
 if [ -z "$IDENT" ]; then
@@ -71,7 +76,7 @@ if [ -z "$TEAM" ] || [ "$TEAM" = "not set" ]; then
 	exit 1
 fi
 echo "identity: $IDENT"
-echo "certificate probe: binaries signed with it execute."
+echo "certificate trust and OCSP revocation check: passed (no test executable)."
 echo "team id (DEVELOPMENT_TEAM): $TEAM"
 
 build() {

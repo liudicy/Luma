@@ -57,3 +57,13 @@ On 2026-10-16, the signed 1.7.1 app was relaunched and the main panel and settin
 ## Repository rename
 
 The GitHub repository is named `liudicy/Luma`. README clone instructions, release/issue links, About/Credits source links and the Sparkle feed URL use the new repository path. The Xcode project/target, local checkout directory and bundle identifier remain unchanged.
+
+## Repeated malware-blocked notifications
+
+System logs on 2026-10-16 identify the blocked object as a temporary `probe` executable from the former certificate-selection loop. `security find-identity -v` listed a revoked Apple Development identity first, with `CSSMERR_TP_CERT_REVOKED`. The former helper signed and executed a test with that identity before moving to the valid certificate. AMFI rejected its signature and syspolicyd showed the malware-blocked notification. Repeated builds repeated this trigger.
+
+The helper now skips annotated invalid identities, matches their public certificate fingerprints, and requires code-signing trust plus a positive OCSP revocation check using `security verify-cert`. Team ID comes from the public certificate's OU. It creates no native test executable and runs none. No security policy, quarantine attribute, keychain certificate or trust setting was changed.
+
+Validation: the revised helper selected the valid identity and completed a signed Release build with strict signature verification. Three subprocess regression tests passed (annotated revoked identity, unannotated trust failure with fallback, and no trusted identity stopping before any build/signing). No new `probe` AMFI rejection appeared in the fresh log window. Earlier queued notifications can remain until dismissed.
+
+The installed app's deep/strict signature-integrity verification passes, but `spctl --assess --type execute` rejects this development-signed local build. Signature integrity is not malware clearance or distribution acceptance; Developer ID distribution signing and notarization remain outstanding.

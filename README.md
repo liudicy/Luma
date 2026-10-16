@@ -56,7 +56,7 @@ cd Luma
 open build/signed-DerivedData/Build/Products/Release/Luma.app
 ```
 
-The helper finds a usable Apple signing certificate in your keychain and builds a signed Release app. In Xcode, select your own team under **Signing & Capabilities**. It does not create certificates or notarize a distribution build. `--reset-tcc` explicitly resets screen permission; `--prove` runs an interactive rebuild check.
+The helper checks public certificates against code-signing trust and online OCSP revocation status before building a signed Release app. It does not execute certificate-test binaries. In Xcode, select your own team under **Signing & Capabilities**. It does not create certificates or notarize a distribution build. `--reset-tcc` explicitly resets screen permission; `--prove` runs an interactive rebuild check.
 
 The Xcode project/target remain `QuickRecorder`, and the bundle ID remains `com.liudicy.QuickRecorder` to preserve this fork's settings and authorization identity. The app's product name is **Luma**. Swift Package Manager resolves the pinned dependencies in `Package.resolved`.
 

@@ -56,7 +56,7 @@ cd Luma
 open build/signed-DerivedData/Build/Products/Release/Luma.app
 ```
 
-脚本会探测钥匙串中可用的 Apple 签名证书，构建签名 Release 应用。在 Xcode 中使用时，请在 **Signing & Capabilities** 中选择自己的开发团队。脚本不会创建证书，也不会为分发版本执行公证。`--reset-tcc` 会显式重置屏幕权限；`--prove` 是需要交互的重编译验证。
+脚本先对公开证书执行代码签名信任及在线 OCSP 撤销检查，再构建签名 Release 应用，不会运行证书测试程序。在 Xcode 中使用时，请在 **Signing & Capabilities** 中选择自己的开发团队。脚本不会创建证书，也不会为分发版本执行公证。`--reset-tcc` 会显式重置屏幕权限；`--prove` 是需要交互的重编译验证。
 
 Xcode 项目及 target 保留 `QuickRecorder` 名称，应用标识保留 `com.liudicy.QuickRecorder`，以延续本分支的设置和授权身份。生成的应用名称为 **Luma**。Swift Package Manager 根据 `Package.resolved` 解析锁定的依赖。
 
